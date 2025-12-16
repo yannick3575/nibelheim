@@ -28,13 +28,13 @@ function ModuleLoading() {
 
 export default async function ModulePage({ params }: ModulePageProps) {
     const { moduleId } = await params;
-    const module = moduleRegistry.getModule(moduleId);
+    const currentModule = moduleRegistry.getModule(moduleId);
 
-    if (!module || !module.enabled) {
+    if (!currentModule || !currentModule.enabled) {
         notFound();
     }
 
-    const ModuleComponent = module.component;
+    const ModuleComponent = currentModule.component;
 
     return (
         <Suspense fallback={<ModuleLoading />}>
@@ -46,7 +46,7 @@ export default async function ModulePage({ params }: ModulePageProps) {
 // Generate static params for enabled modules
 export async function generateStaticParams() {
     const enabledModules = moduleRegistry.getEnabledModules();
-    return enabledModules.map((module) => ({
-        moduleId: module.id,
+    return enabledModules.map((mod) => ({
+        moduleId: mod.id,
     }));
 }
