@@ -1,92 +1,310 @@
-import fs from 'fs';
-import path from 'path';
+import { createClient } from '@/lib/supabase/server';
 
-// Path to the digests directory
-const DIGESTS_DIR = path.join(process.cwd(), 'scripts', 'tech-watch-bot', 'digests');
+// ============================================
+// TYPES
+// ============================================
 
-export interface DigestMeta {
-    slug: string;
-    date: string;
-    filename: string;
+export interface Article {
+    id: string;
+    user_id: string;
+    title: string;
+    url: string;
+    source: string;
+    content: string | null;
+    summary: string | null;
+    tags: string[];
+    published_at: string | null;
+    collected_at: string;
+    read: boolean;
 }
 
-export interface DigestContent extends DigestMeta {
-    content: string;
+export interface Digest {
+    id: string;
+    user_id: string;
+    period_start: string;
+    period_end: string;
+    summary: string;
+    key_topics: string[];
+    article_ids: string[];
+    created_at: string;
+}
+
+export interface DigestWithArticles extends Digest {
+    articles: Article[];
+}
+
+export interface DigestMeta {
+    id: string;
+    date: string;
+    article_count: number;
+}
+
+// ============================================
+// DIGEST FUNCTIONS
+// ============================================
+
+/**
+ * Get the latest digest with its articles
+ */
+export async function getLatestDigest(): Promise<DigestWithArticles | null> {
+    const supabase = await createClient();
+
+    const { data: digest, error } = await supabase
+        .from('tech_watch_digests')
+        .select('*')
+        .order('period_start', { ascending: false })
+        .limit(1)
+        .single();
+
+    if (error || !digest) {
+        console.error('Error fetching latest digest:', error);
+        return null;
+    }
+
+    // Fetch related articles
+    const articles = await getArticlesByIds(digest.article_ids || []);
+
+    return { ...digest, articles };
 }
 
 /**
- * Ensures the digests directory exists
+ * Get a digest by date (YYYY-MM-DD format)
  */
-function ensureDirectory() {
-    if (!fs.existsSync(DIGESTS_DIR)) {
-        // If directory doesn't exist (e.g. no digests yet), return empty list safely
+export async function getDigestByDate(date: string): Promise<DigestWithArticles | null> {
+    const supabase = await createClient();
+
+    const periodStart = `${date}T00:00:00`;
+    const periodEnd = `${date}T23:59:59`;
+
+    const { data: digest, error } = await supabase
+        .from('tech_watch_digests')
+        .select('*')
+        .gte('period_start', periodStart)
+        .lte('period_end', periodEnd)
+        .single();
+
+    if (error || !digest) {
+        return null;
+    }
+
+    const articles = await getArticlesByIds(digest.article_ids || []);
+
+    return { ...digest, articles };
+}
+
+/**
+ * Get all digests metadata (for history list)
+ */
+export async function getDigests(limit = 30): Promise<DigestMeta[]> {
+    const supabase = await createClient();
+
+    const { data, error } = await supabase
+        .from('tech_watch_digests')
+        .select('id, period_start, article_ids')
+        .order('period_start', { ascending: false })
+        .limit(limit);
+
+    if (error || !data) {
+        console.error('Error fetching digests:', error);
+        return [];
+    }
+
+    return data.map(d => ({
+        id: d.id,
+        date: d.period_start.split('T')[0],
+        article_count: d.article_ids?.length || 0
+    }));
+}
+
+// ============================================
+// ARTICLE FUNCTIONS
+// ============================================
+
+/**
+ * Get articles by their IDs
+ */
+export async function getArticlesByIds(ids: string[]): Promise<Article[]> {
+    if (!ids || ids.length === 0) return [];
+
+    const supabase = await createClient();
+
+    const { data, error } = await supabase
+        .from('tech_watch_articles')
+        .select('*')
+        .in('id', ids)
+        .order('collected_at', { ascending: false });
+
+    if (error) {
+        console.error('Error fetching articles:', error);
+        return [];
+    }
+
+    return data || [];
+}
+
+/**
+ * Get all articles with optional pagination
+ */
+export async function getArticles(limit = 50, offset = 0): Promise<Article[]> {
+    const supabase = await createClient();
+
+    const { data, error } = await supabase
+        .from('tech_watch_articles')
+        .select('*')
+        .order('collected_at', { ascending: false })
+        .range(offset, offset + limit - 1);
+
+    if (error) {
+        console.error('Error fetching articles:', error);
+        return [];
+    }
+
+    return data || [];
+}
+
+/**
+ * Get a single article by ID
+ */
+export async function getArticle(id: string): Promise<Article | null> {
+    const supabase = await createClient();
+
+    const { data, error } = await supabase
+        .from('tech_watch_articles')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+    if (error) {
+        console.error('Error fetching article:', error);
+        return null;
+    }
+
+    return data;
+}
+
+/**
+ * Toggle article read status
+ */
+export async function toggleArticleRead(id: string, read: boolean): Promise<boolean> {
+    const supabase = await createClient();
+
+    const { error } = await supabase
+        .from('tech_watch_articles')
+        .update({ read })
+        .eq('id', id);
+
+    if (error) {
+        console.error('Error updating article read status:', error);
         return false;
     }
+
+    return true;
+}
+
+// ============================================
+// SOURCE FUNCTIONS
+// ============================================
+
+export interface Source {
+    id: string;
+    user_id: string;
+    type: 'rss' | 'api' | 'manual';
+    name: string;
+    url: string | null;
+    config: Record<string, unknown>;
+    enabled: boolean;
+    last_fetched_at: string | null;
+    created_at: string;
+}
+
+/**
+ * Get all sources for the current user
+ */
+export async function getSources(): Promise<Source[]> {
+    const supabase = await createClient();
+
+    const { data, error } = await supabase
+        .from('tech_watch_sources')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        console.error('Error fetching sources:', error);
+        return [];
+    }
+
+    return data || [];
+}
+
+/**
+ * Create a new source
+ */
+export async function createSource(source: {
+    type: Source['type'];
+    name: string;
+    url?: string;
+    config?: Record<string, unknown>;
+}): Promise<Source | null> {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) return null;
+
+    const { data, error } = await supabase
+        .from('tech_watch_sources')
+        .insert({
+            user_id: user.id,
+            type: source.type,
+            name: source.name,
+            url: source.url || null,
+            config: source.config || {},
+            enabled: true
+        })
+        .select()
+        .single();
+
+    if (error) {
+        console.error('Error creating source:', error);
+        return null;
+    }
+
+    return data;
+}
+
+/**
+ * Update a source
+ */
+export async function updateSource(id: string, updates: Partial<Source>): Promise<boolean> {
+    const supabase = await createClient();
+
+    const { error } = await supabase
+        .from('tech_watch_sources')
+        .update(updates)
+        .eq('id', id);
+
+    if (error) {
+        console.error('Error updating source:', error);
+        return false;
+    }
+
     return true;
 }
 
 /**
- * Lists all available digests, sorted by date (newest first)
+ * Delete a source
  */
-export async function getDigests(): Promise<DigestMeta[]> {
-    if (!ensureDirectory()) return [];
+export async function deleteSource(id: string): Promise<boolean> {
+    const supabase = await createClient();
 
-    try {
-        const files = fs.readdirSync(DIGESTS_DIR);
+    const { error } = await supabase
+        .from('tech_watch_sources')
+        .delete()
+        .eq('id', id);
 
-        const digests = files
-            .filter(file => file.startsWith('digest_') && file.endsWith('.md'))
-            .map(file => {
-                // filename format: digest_YYYY-MM-DD.md
-                const datePart = file.replace('digest_', '').replace('.md', '');
-                return {
-                    slug: datePart, // We use the date as the slug
-                    date: datePart,
-                    filename: file
-                };
-            })
-            .sort((a, b) => b.date.localeCompare(a.date)); // Sort descending (newest first)
-
-        return digests;
-    } catch (error) {
-        console.error("Error reading digests directory:", error);
-        return [];
-    }
-}
-
-/**
- * Gets a specific digest by slug (date)
- */
-export async function getDigest(slug: string): Promise<DigestContent | null> {
-    if (!ensureDirectory()) return null;
-
-    const filename = `digest_${slug}.md`;
-    const filePath = path.join(DIGESTS_DIR, filename);
-
-    if (!fs.existsSync(filePath)) {
-        return null;
+    if (error) {
+        console.error('Error deleting source:', error);
+        return false;
     }
 
-    try {
-        const content = fs.readFileSync(filePath, 'utf-8');
-        return {
-            slug,
-            date: slug,
-            filename,
-            content
-        };
-    } catch (error) {
-        console.error(`Error reading digest ${slug}:`, error);
-        return null;
-    }
-}
-
-/**
- * Gets the latest digest
- */
-export async function getLatestDigest(): Promise<DigestContent | null> {
-    const digests = await getDigests();
-    if (digests.length === 0) return null;
-
-    return getDigest(digests[0].slug);
+    return true;
 }

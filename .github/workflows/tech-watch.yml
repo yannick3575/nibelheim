@@ -9,8 +9,6 @@ on:
 jobs:
     tech-watch:
         runs-on: ubuntu-latest
-        permissions:
-            contents: write # Needed to commit history.json and digests
 
         steps:
             - name: Checkout repository
@@ -28,13 +26,9 @@ jobs:
 
             - name: Run Tech Watch Bot
               env:
-                  # OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-                  GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }} # Uncomment if using Gemini
+                  GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+                  SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+                  SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+                  USER_ID: ${{ secrets.USER_ID }}
               run: |
                   python scripts/tech-watch-bot/main.py
-
-            - name: Commit and push changes
-              uses: stefanzweifel/git-auto-commit-action@v5
-              with:
-                  commit_message: "🤖 Tech Watch Bot Update [skip ci]"
-                  file_pattern: "scripts/tech-watch-bot/history.json scripts/tech-watch-bot/digests/*.md"
