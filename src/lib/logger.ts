@@ -9,19 +9,6 @@
 
 const isDev = process.env.NODE_ENV !== "production";
 
-/**
- * Extract context tag from first argument (e.g., "[tech-watch]")
- */
-function extractTag(args: unknown[]): string | null {
-  if (typeof args[0] === "string") {
-    const match = args[0].match(/^\[([^\]]+)\]/);
-    if (match) {
-      return match[1];
-    }
-  }
-  return null;
-}
-
 export const logger = {
   /**
    * Log debug information (dev only)
@@ -38,10 +25,7 @@ export const logger = {
    */
   error: (...args: unknown[]) => {
     console.error(...args);
-
     // TODO: Add Sentry integration here when needed
-    // const tag = extractTag(args);
-    // Sentry.captureException(...)
   },
 
   /**
