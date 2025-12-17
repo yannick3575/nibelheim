@@ -20,6 +20,9 @@ export default function LoginPage() {
     // Lazy initialize Supabase client to avoid build-time errors
     const getSupabase = () => createClient();
 
+    // Use configured site URL for redirects, fallback to current origin
+    const getSiteUrl = () => process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
+
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
@@ -53,7 +56,7 @@ export default function LoginPage() {
             const { error } = await getSupabase().auth.signInWithOtp({
                 email,
                 options: {
-                    emailRedirectTo: `${window.location.origin}/auth/callback`,
+                    emailRedirectTo: `${getSiteUrl()}/auth/callback`,
                 },
             });
 
@@ -83,7 +86,7 @@ export default function LoginPage() {
                 email,
                 password,
                 options: {
-                    emailRedirectTo: `${window.location.origin}/auth/callback`,
+                    emailRedirectTo: `${getSiteUrl()}/auth/callback`,
                 },
             });
 
