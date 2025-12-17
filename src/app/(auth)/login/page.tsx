@@ -16,14 +16,16 @@ export default function LoginPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [mode, setMode] = useState<'login' | 'magic-link'>('login');
     const router = useRouter();
-    const supabase = createClient();
+
+    // Lazy initialize Supabase client to avoid build-time errors
+    const getSupabase = () => createClient();
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
 
         try {
-            const { error } = await supabase.auth.signInWithPassword({
+            const { error } = await getSupabase().auth.signInWithPassword({
                 email,
                 password,
             });
@@ -48,7 +50,7 @@ export default function LoginPage() {
         setIsLoading(true);
 
         try {
-            const { error } = await supabase.auth.signInWithOtp({
+            const { error } = await getSupabase().auth.signInWithOtp({
                 email,
                 options: {
                     emailRedirectTo: `${window.location.origin}/auth/callback`,
@@ -77,7 +79,7 @@ export default function LoginPage() {
         setIsLoading(true);
 
         try {
-            const { error } = await supabase.auth.signUp({
+            const { error } = await getSupabase().auth.signUp({
                 email,
                 password,
                 options: {

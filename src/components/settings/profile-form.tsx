@@ -1,12 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Save, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { createClient } from '@/lib/supabase/client';
-import type { User } from '@supabase/supabase-js';
+import type { User, SupabaseClient } from '@supabase/supabase-js';
 
 interface ProfileData {
     display_name: string;
@@ -23,10 +23,18 @@ export function ProfileForm() {
     const [saving, setSaving] = useState(false);
     const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-    const supabase = createClient();
+    // Lazy initialize Supabase client to avoid build-time errors
+    const supabaseRef = useRef<SupabaseClient | null>(null);
+    const getSupabase = () => {
+        if (!supabaseRef.current) {
+            supabaseRef.current = createClient();
+        }
+        return supabaseRef.current;
+    };
 
     useEffect(() => {
         async function loadProfile() {
+            const supabase = getSupabase();
             try {
                 const { data: { user } } = await supabase.auth.getUser();
                 setUser(user);
@@ -53,7 +61,7 @@ export function ProfileForm() {
         }
 
         loadProfile();
-    }, [supabase]);
+    }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -63,7 +71,7 @@ export function ProfileForm() {
         setMessage(null);
 
         try {
-            const { error } = await supabase
+            const { error } = await getSupabase()
                 .from('profiles')
                 .update({
                     display_name: profile.display_name,
