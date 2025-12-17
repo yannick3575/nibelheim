@@ -66,11 +66,17 @@ def main():
     for article in new_articles:
         logger.info(f"Processing: {article['title']}")
 
-        # 1. Scrape Content
+        # 1. Scrape Content (with RSS description fallback)
         content = clean_html_content(article['link'])
         if not content:
-            logger.warning(f"Skipping {article['title']} - content extraction failed.")
-            continue
+            # Fallback to RSS description if scraping fails (e.g., 403 errors)
+            rss_description = article.get('description', '')
+            if rss_description:
+                logger.info(f"Using RSS description as fallback for {article['title']}")
+                content = f"[Contenu extrait du résumé RSS - le site original bloque le scraping]\n\n{rss_description}"
+            else:
+                logger.warning(f"Skipping {article['title']} - content extraction failed and no RSS fallback.")
+                continue
 
         # 2. Scrape Comments
         comments = fetch_hn_comments(article['comments_link'])

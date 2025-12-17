@@ -21,12 +21,15 @@ def fetch_hn_feed(url: str = RSS_URL) -> List[Dict[str, Any]]:
         articles = []
         for entry in feed.entries:
             # Extract relevant fields
+            # The 'summary' field from hnrss.org contains a brief description
+            # which can be used as fallback if article scraping fails
             article = {
                 "id": entry.get("id", ""), # HN RSS ids are usually the URL
                 "title": entry.get("title", "No Title"),
                 "link": entry.get("link", ""),
                 "comments_link": entry.get("comments", ""),
                 "published": entry.get("published", ""),
+                "description": entry.get("summary", ""),  # RSS description as fallback
             }
             articles.append(article)
             
