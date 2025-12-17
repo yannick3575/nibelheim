@@ -104,15 +104,58 @@ export default function LoginPage() {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-background p-4">
-            <Card className="w-full max-w-md">
+        <div className="min-h-screen flex items-center justify-center bg-background p-4 relative overflow-hidden">
+            {/* Aurora background orbs */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                <div
+                    className="absolute -top-1/4 -left-1/4 w-[600px] h-[600px] rounded-full opacity-30"
+                    style={{
+                        background: 'radial-gradient(circle, oklch(0.75 0.18 195 / 40%) 0%, transparent 70%)',
+                        filter: 'blur(80px)',
+                        animation: 'aurora-float 20s ease-in-out infinite',
+                    }}
+                />
+                <div
+                    className="absolute -bottom-1/4 -right-1/4 w-[500px] h-[500px] rounded-full opacity-25"
+                    style={{
+                        background: 'radial-gradient(circle, oklch(0.65 0.25 300 / 40%) 0%, transparent 70%)',
+                        filter: 'blur(80px)',
+                        animation: 'aurora-float 25s ease-in-out infinite reverse',
+                    }}
+                />
+                <div
+                    className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] rounded-full opacity-15"
+                    style={{
+                        background: 'radial-gradient(circle, oklch(0.70 0.25 330 / 30%) 0%, transparent 70%)',
+                        filter: 'blur(60px)',
+                        animation: 'aurora-float 15s ease-in-out infinite',
+                    }}
+                />
+            </div>
+
+            {/* Grid pattern */}
+            <div
+                className="absolute inset-0 opacity-[0.02] pointer-events-none"
+                style={{
+                    backgroundImage: `
+                        linear-gradient(oklch(1 0 0 / 50%) 1px, transparent 1px),
+                        linear-gradient(90deg, oklch(1 0 0 / 50%) 1px, transparent 1px)
+                    `,
+                    backgroundSize: '60px 60px',
+                }}
+            />
+
+            <Card className="w-full max-w-md relative z-10 border-white/10 shadow-2xl shadow-black/20">
                 <CardHeader className="space-y-1 text-center">
                     <div className="flex justify-center mb-4">
-                        <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                            <FlaskConical className="h-6 w-6" />
+                        <div className="relative">
+                            <div className="absolute inset-0 aurora-glow rounded-xl" />
+                            <div className="relative flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-aurora-violet text-primary-foreground shadow-lg shadow-primary/30">
+                                <FlaskConical className="h-7 w-7" />
+                            </div>
                         </div>
                     </div>
-                    <CardTitle className="text-2xl">Nibelheim</CardTitle>
+                    <CardTitle className="text-2xl aurora-text font-bold">Nibelheim</CardTitle>
                     <CardDescription>
                         Connectez-vous à votre laboratoire d&apos;expérimentation
                     </CardDescription>
@@ -138,7 +181,7 @@ export default function LoginPage() {
                                     required
                                 />
                             </div>
-                            <Button type="submit" className="w-full" disabled={isLoading}>
+                            <Button type="submit" className="w-full bg-gradient-to-r from-primary to-aurora-violet hover:from-primary/90 hover:to-aurora-violet/90 transition-all duration-300" disabled={isLoading}>
                                 {isLoading ? (
                                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                 ) : (
@@ -149,7 +192,7 @@ export default function LoginPage() {
                             <Button
                                 type="button"
                                 variant="outline"
-                                className="w-full"
+                                className="w-full border-primary/30 hover:bg-primary/10 hover:border-primary/50 transition-all duration-300"
                                 onClick={handleSignUp}
                                 disabled={isLoading}
                             >
@@ -167,7 +210,7 @@ export default function LoginPage() {
                                     required
                                 />
                             </div>
-                            <Button type="submit" className="w-full" disabled={isLoading}>
+                            <Button type="submit" className="w-full bg-gradient-to-r from-primary to-aurora-violet hover:from-primary/90 hover:to-aurora-violet/90 transition-all duration-300" disabled={isLoading}>
                                 {isLoading ? (
                                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                 ) : (

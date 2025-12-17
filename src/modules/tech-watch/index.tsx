@@ -93,16 +93,21 @@ export default function TechWatchModule() {
 
     return (
         <div className="space-y-6 h-full flex flex-col">
-            {/* Header */}
+            {/* Header with Aurora accent */}
             <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Tech Watch</h1>
-                    <p className="text-muted-foreground">
-                        Veille technologique automatisée via Gemini
-                    </p>
+                <div className="flex items-center gap-4">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-aurora-cyan/20 to-aurora-teal/20 text-aurora-cyan border border-aurora-cyan/20">
+                        <Rss className="h-6 w-6" />
+                    </div>
+                    <div>
+                        <h1 className="text-3xl font-bold tracking-tight">Tech Watch</h1>
+                        <p className="text-muted-foreground">
+                            Veille technologique automatisée via Gemini
+                        </p>
+                    </div>
                 </div>
                 <div className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={handleRefresh}>
+                    <Button variant="outline" size="sm" onClick={handleRefresh} className="border-aurora-cyan/30 hover:border-aurora-cyan/50 hover:bg-aurora-cyan/10 transition-all">
                         <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
                         Actualiser
                     </Button>

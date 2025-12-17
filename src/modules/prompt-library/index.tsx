@@ -84,22 +84,25 @@ export default function PromptLibraryModule() {
 
   return (
     <div className="space-y-6 h-full flex flex-col">
-      {/* Header */}
+      {/* Header with Aurora accent */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-            <BookText className="h-8 w-8" />
-            Prompt Library
-          </h1>
-          <p className="text-muted-foreground">
-            Gérez et réutilisez vos meilleurs prompts
-          </p>
+        <div className="flex items-center gap-4">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-aurora-magenta/20 to-aurora-violet/20 text-aurora-magenta border border-aurora-magenta/20">
+            <BookText className="h-6 w-6" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Prompt Library</h1>
+            <p className="text-muted-foreground">
+              Gérez et réutilisez vos meilleurs prompts
+            </p>
+          </div>
         </div>
         <div className="flex gap-2">
           <Button
             variant={viewMode === 'cards' ? 'default' : 'outline'}
             size="icon"
             onClick={() => setViewMode('cards')}
+            className={viewMode === 'cards' ? 'bg-gradient-to-r from-primary to-aurora-violet' : 'border-primary/30 hover:border-primary/50'}
           >
             <Grid3x3 className="h-4 w-4" />
           </Button>
@@ -107,25 +110,26 @@ export default function PromptLibraryModule() {
             variant={viewMode === 'list' ? 'default' : 'outline'}
             size="icon"
             onClick={() => setViewMode('list')}
+            className={viewMode === 'list' ? 'bg-gradient-to-r from-primary to-aurora-violet' : 'border-primary/30 hover:border-primary/50'}
           >
             <List className="h-4 w-4" />
           </Button>
-          <Button onClick={() => setCreateDialogOpen(true)}>
+          <Button onClick={() => setCreateDialogOpen(true)} className="bg-gradient-to-r from-aurora-magenta to-aurora-violet hover:from-aurora-magenta/90 hover:to-aurora-violet/90 transition-all">
             <Plus className="mr-2 h-4 w-4" />
             Nouveau prompt
           </Button>
         </div>
       </div>
 
-      {/* Stats */}
+      {/* Stats with subtle Aurora accents */}
       <div className="grid gap-4 md:grid-cols-3">
-        <Card>
+        <Card className="border-aurora-magenta/20 hover:border-aurora-magenta/30 transition-colors">
           <CardHeader className="pb-2">
             <CardDescription>Total</CardDescription>
-            <CardTitle className="text-2xl">{loading ? '-' : totalPrompts}</CardTitle>
+            <CardTitle className="text-2xl text-aurora-magenta">{loading ? '-' : totalPrompts}</CardTitle>
           </CardHeader>
         </Card>
-        <Card>
+        <Card className="border-yellow-500/20 hover:border-yellow-500/30 transition-colors">
           <CardHeader className="pb-2">
             <CardDescription>Favoris</CardDescription>
             <CardTitle className="text-2xl flex items-center gap-2">
@@ -134,10 +138,10 @@ export default function PromptLibraryModule() {
             </CardTitle>
           </CardHeader>
         </Card>
-        <Card>
+        <Card className="border-aurora-violet/20 hover:border-aurora-violet/30 transition-colors">
           <CardHeader className="pb-2">
             <CardDescription>Catégories utilisées</CardDescription>
-            <CardTitle className="text-2xl">{loading ? '-' : categoryCount}</CardTitle>
+            <CardTitle className="text-2xl text-aurora-violet">{loading ? '-' : categoryCount}</CardTitle>
           </CardHeader>
         </Card>
       </div>
