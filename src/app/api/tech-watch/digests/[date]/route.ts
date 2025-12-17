@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDigestByDate } from '@/lib/tech-watch';
+import { logger } from '@/lib/logger';
 
 interface RouteParams {
     params: Promise<{
@@ -13,18 +14,27 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
         // Validate date format (YYYY-MM-DD)
         if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-            return new NextResponse('Invalid date format. Use YYYY-MM-DD', { status: 400 });
+            return NextResponse.json(
+                { error: 'Invalid date format. Use YYYY-MM-DD' },
+                { status: 400 }
+            );
         }
 
         const digest = await getDigestByDate(date);
 
         if (!digest) {
-            return new NextResponse('Digest not found', { status: 404 });
+            return NextResponse.json(
+                { error: 'Digest not found' },
+                { status: 404 }
+            );
         }
 
         return NextResponse.json(digest);
     } catch (error) {
-        console.error('Error in tech-watch/digests/[date] API:', error);
-        return new NextResponse('Internal Server Error', { status: 500 });
+        logger.error('[tech-watch/digests/date] GET error:', error);
+        return NextResponse.json(
+            { error: 'Internal server error' },
+            { status: 500 }
+        );
     }
 }
