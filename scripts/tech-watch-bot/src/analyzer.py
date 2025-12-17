@@ -91,7 +91,7 @@ def analyze_article(article_content: str, comments: List[Dict[str, str]], title:
 
     try:
         genai.configure(api_key=api_key)
-        model = genai.GenerativeModel('gemini-2.5-flash')
+        model = genai.GenerativeModel('gemini-3-flash-preview')
 
         # Format the input for the LLM
         comments_text = "\n".join([f"- {c['author']}: {c['text']}" for c in comments])
