@@ -89,6 +89,11 @@ def main():
         # 3. Analyze
         analysis = analyze_article(content, comments, article['title'])
 
+        # Skip article if analysis failed (quota/rate limit issues)
+        if analysis is None:
+            logger.warning(f"Skipping '{article['title']}' - analysis failed. Will retry on next run.")
+            continue
+
         # 4. Save article to database
         article_id = save_article(
             supabase=supabase,
