@@ -1,0 +1,83 @@
+// ============================================
+// TYPES & CONSTANTS (Safe for client import)
+// ============================================
+
+export type PromptCategory = 'coding' | 'writing' | 'analysis' | 'creative' | 'other';
+
+export const PROMPT_CATEGORIES: { value: PromptCategory; label: string }[] = [
+  { value: 'coding', label: 'Coding' },
+  { value: 'writing', label: 'Writing' },
+  { value: 'analysis', label: 'Analysis' },
+  { value: 'creative', label: 'Creative' },
+  { value: 'other', label: 'Other' },
+];
+
+export const CATEGORY_COLORS: Record<PromptCategory, string> = {
+  coding: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
+  writing: 'bg-purple-500/10 text-purple-500 border-purple-500/20',
+  analysis: 'bg-green-500/10 text-green-500 border-green-500/20',
+  creative: 'bg-pink-500/10 text-pink-500 border-pink-500/20',
+  other: 'bg-zinc-500/10 text-zinc-500 border-zinc-500/20',
+};
+
+export interface Prompt {
+  id: string;
+  user_id: string;
+  title: string;
+  content: string;
+  category: PromptCategory;
+  tags: string[];
+  is_favorite: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreatePromptInput {
+  title: string;
+  content: string;
+  category: PromptCategory;
+  tags?: string[];
+  is_favorite?: boolean;
+}
+
+export interface UpdatePromptInput {
+  title?: string;
+  content?: string;
+  category?: PromptCategory;
+  tags?: string[];
+  is_favorite?: boolean;
+}
+
+export interface PromptFilters {
+  category?: PromptCategory;
+  tags?: string[];
+  favorites?: boolean;
+  search?: string;
+}
+
+// ============================================
+// VARIABLE UTILITIES (Client-safe)
+// ============================================
+
+/**
+ * Extract variables from prompt content ({{variable}} pattern)
+ */
+export function extractVariables(content: string): string[] {
+  const regex = /\{\{(\w+)\}\}/g;
+  const matches = content.matchAll(regex);
+  const variables = Array.from(matches, (m) => m[1]);
+  return Array.from(new Set(variables)); // Deduplicate
+}
+
+/**
+ * Replace variables in content with provided values
+ * Uses split/join to avoid regex special character issues with $
+ */
+export function fillVariables(content: string, values: Record<string, string>): string {
+  let result = content;
+  Object.entries(values).forEach(([key, value]) => {
+    // Using split/join instead of replace to avoid $ special char issues
+    result = result.split(`{{${key}}}`).join(value);
+  });
+  return result;
+}

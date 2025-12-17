@@ -1,9 +1,10 @@
 import { lazy } from 'react';
-import { Rss, FlaskConical, Zap, LayoutDashboard } from 'lucide-react';
+import { Rss, FlaskConical, BookText } from 'lucide-react';
 import { ModuleConfig, ModuleRegistry } from '@/types/modules';
 
 // Lazy load module components
 const TechWatchModule = lazy(() => import('./tech-watch'));
+const PromptLibraryModule = lazy(() => import('./prompt-library'));
 const TemplateModule = lazy(() => import('./_template'));
 
 // Module definitions
@@ -18,6 +19,17 @@ const modules: ModuleConfig[] = [
         component: TechWatchModule,
         category: 'ai',
         tags: ['ai', 'rss', 'summarization', 'embeddings'],
+    },
+    {
+        id: 'prompt-library',
+        name: 'Prompt Library',
+        description: 'Bibliothèque de prompts réutilisables avec variables et catégorisation',
+        icon: BookText,
+        route: '/prompt-library',
+        enabled: true,
+        component: PromptLibraryModule,
+        category: 'ai',
+        tags: ['prompts', 'templates', 'productivity'],
     },
     // Template module - disabled by default, for development reference
     {
