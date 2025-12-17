@@ -2,8 +2,9 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { User } from '@supabase/supabase-js';
 import {
     Sidebar,
@@ -35,11 +36,20 @@ export function AppSidebar() {
     const pathname = usePathname();
     const router = useRouter();
     const enabledModules = moduleRegistry.getEnabledModules();
-    const supabase = createClient();
+
+    // Lazy initialize Supabase client to avoid build-time errors
+    const supabaseRef = useRef<SupabaseClient | null>(null);
+    const getSupabase = () => {
+        if (!supabaseRef.current) {
+            supabaseRef.current = createClient();
+        }
+        return supabaseRef.current;
+    };
 
     const [user, setUser] = useState<User | null>(null);
 
     useEffect(() => {
+        const supabase = getSupabase();
         const getUser = async () => {
             const { data: { user } } = await supabase.auth.getUser();
             setUser(user);
@@ -51,10 +61,10 @@ export function AppSidebar() {
         });
 
         return () => subscription.unsubscribe();
-    }, [supabase.auth]);
+    }, []);
 
     const handleSignOut = async () => {
-        await supabase.auth.signOut();
+        await getSupabase().auth.signOut();
         toast.success('Déconnexion réussie');
         router.push('/login');
         router.refresh();
