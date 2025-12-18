@@ -24,13 +24,13 @@ export function DigestList({ digests, selectedDate, onSelect }: DigestListProps)
     if (digests.length === 0) {
         return (
             <Card>
-                <CardHeader className="pb-3">
+                <CardHeader className="pb-3 p-4 sm:p-6">
                     <CardTitle className="text-sm font-medium flex items-center gap-2">
                         <Calendar className="h-4 w-4" />
                         Historique
                     </CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-4 sm:p-6 pt-0">
                     <p className="text-sm text-muted-foreground">
                         Aucun digest disponible
                     </p>
@@ -41,28 +41,28 @@ export function DigestList({ digests, selectedDate, onSelect }: DigestListProps)
 
     return (
         <Card>
-            <CardHeader className="pb-3">
+            <CardHeader className="pb-3 p-4 sm:p-6">
                 <CardTitle className="text-sm font-medium flex items-center gap-2">
                     <Calendar className="h-4 w-4" />
                     Historique
                 </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-                <div className="max-h-[400px] overflow-y-auto">
+                <div className="max-h-[300px] sm:max-h-[400px] overflow-y-auto">
                     {digests.map((digest) => (
                         <button
                             key={digest.id}
                             onClick={() => onSelect(digest.date)}
                             className={cn(
-                                "w-full px-4 py-3 text-left transition-colors",
+                                "w-full px-3 sm:px-4 py-2.5 sm:py-3 text-left transition-colors",
                                 "hover:bg-muted/50 border-b border-border last:border-b-0",
                                 selectedDate === digest.date && "bg-muted"
                             )}
                         >
-                            <div className="font-medium text-sm">
+                            <div className="font-medium text-xs sm:text-sm">
                                 {formatDate(digest.date)}
                             </div>
-                            <div className="text-xs text-muted-foreground mt-0.5">
+                            <div className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">
                                 {digest.article_count} article{digest.article_count > 1 ? 's' : ''}
                             </div>
                         </button>
