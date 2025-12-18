@@ -6,6 +6,7 @@ import { GET, PATCH } from './route';
 vi.mock('@/lib/tech-watch', () => ({
   getArticle: vi.fn(),
   toggleArticleRead: vi.fn(),
+  toggleArticleFavorite: vi.fn(),
 }));
 
 // Mock the logger
@@ -16,7 +17,7 @@ vi.mock('@/lib/logger', () => ({
   },
 }));
 
-import { getArticle, toggleArticleRead } from '@/lib/tech-watch';
+import { getArticle, toggleArticleRead, toggleArticleFavorite } from '@/lib/tech-watch';
 
 describe('/api/tech-watch/articles/[id]', () => {
   beforeEach(() => {
@@ -128,7 +129,7 @@ describe('/api/tech-watch/articles/[id]', () => {
 
       expect(response.status).toBe(400);
       expect(data.error).toBe('Invalid request');
-      expect(data.details).toBe('read must be a boolean');
+      expect(data.details).toContain('expected boolean');
     });
 
     it('should return 400 for null read value', async () => {
@@ -152,7 +153,7 @@ describe('/api/tech-watch/articles/[id]', () => {
       const data = await response.json();
 
       expect(response.status).toBe(500);
-      expect(data.error).toBe('Failed to update article');
+      expect(data.error).toBe('Failed to update article read status');
     });
 
     it('should return 500 on error', async () => {
@@ -166,6 +167,78 @@ describe('/api/tech-watch/articles/[id]', () => {
 
       expect(response.status).toBe(500);
       expect(data.error).toBe('Internal server error');
+    });
+
+    it('should toggle favorite status to true', async () => {
+      vi.mocked(toggleArticleFavorite).mockResolvedValue(true);
+
+      const response = await PATCH(
+        createRequest('PATCH', { is_favorite: true }),
+        createParams('article-1')
+      );
+      const data = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(data.success).toBe(true);
+      expect(data.is_favorite).toBe(true);
+      expect(toggleArticleFavorite).toHaveBeenCalledWith('article-1', true);
+    });
+
+    it('should toggle favorite status to false', async () => {
+      vi.mocked(toggleArticleFavorite).mockResolvedValue(true);
+
+      const response = await PATCH(
+        createRequest('PATCH', { is_favorite: false }),
+        createParams('article-1')
+      );
+      const data = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(data.success).toBe(true);
+      expect(data.is_favorite).toBe(false);
+      expect(toggleArticleFavorite).toHaveBeenCalledWith('article-1', false);
+    });
+
+    it('should handle both read and is_favorite updates simultaneously', async () => {
+      vi.mocked(toggleArticleRead).mockResolvedValue(true);
+      vi.mocked(toggleArticleFavorite).mockResolvedValue(true);
+
+      const response = await PATCH(
+        createRequest('PATCH', { read: true, is_favorite: true }),
+        createParams('article-1')
+      );
+      const data = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(data.success).toBe(true);
+      expect(data.read).toBe(true);
+      expect(data.is_favorite).toBe(true);
+      expect(toggleArticleRead).toHaveBeenCalledWith('article-1', true);
+      expect(toggleArticleFavorite).toHaveBeenCalledWith('article-1', true);
+    });
+
+    it('should return 500 when toggleArticleFavorite fails', async () => {
+      vi.mocked(toggleArticleFavorite).mockResolvedValue(false);
+
+      const response = await PATCH(
+        createRequest('PATCH', { is_favorite: true }),
+        createParams('article-1')
+      );
+      const data = await response.json();
+
+      expect(response.status).toBe(500);
+      expect(data.error).toBe('Failed to update article favorite status');
+    });
+
+    it('should return 400 when neither read nor is_favorite is provided', async () => {
+      const response = await PATCH(
+        createRequest('PATCH', {}),
+        createParams('article-1')
+      );
+      const data = await response.json();
+
+      expect(response.status).toBe(400);
+      expect(data.error).toBe('Invalid request');
     });
   });
 });
