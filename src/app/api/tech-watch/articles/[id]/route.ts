@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { getArticle, toggleArticleRead } from '@/lib/tech-watch';
+import { getArticle, toggleArticleRead, toggleArticleFavorite } from '@/lib/tech-watch';
 import { logger } from '@/lib/logger';
 
 interface RouteParams {
@@ -10,7 +10,10 @@ interface RouteParams {
 }
 
 const updateArticleSchema = z.object({
-    read: z.boolean({ error: 'read must be a boolean' }),
+    read: z.boolean().optional(),
+    is_favorite: z.boolean().optional(),
+}).refine(data => data.read !== undefined || data.is_favorite !== undefined, {
+    message: 'At least one field (read or is_favorite) must be provided',
 });
 
 export async function GET(request: NextRequest, { params }: RouteParams) {
@@ -49,18 +52,36 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
             );
         }
 
-        const { read } = validation.data;
-        const success = await toggleArticleRead(id, read);
+        const { read, is_favorite } = validation.data;
+        const result: { success: boolean; read?: boolean; is_favorite?: boolean } = { success: true };
 
-        if (!success) {
-            return NextResponse.json(
-                { error: 'Failed to update article' },
-                { status: 500 }
-            );
+        // Update read status if provided
+        if (read !== undefined) {
+            const success = await toggleArticleRead(id, read);
+            if (!success) {
+                return NextResponse.json(
+                    { error: 'Failed to update article read status' },
+                    { status: 500 }
+                );
+            }
+            result.read = read;
+            logger.log('[tech-watch/articles/id] Updated article read status:', id, read);
         }
 
-        logger.log('[tech-watch/articles/id] Updated article read status:', id, read);
-        return NextResponse.json({ success: true, read });
+        // Update favorite status if provided
+        if (is_favorite !== undefined) {
+            const success = await toggleArticleFavorite(id, is_favorite);
+            if (!success) {
+                return NextResponse.json(
+                    { error: 'Failed to update article favorite status' },
+                    { status: 500 }
+                );
+            }
+            result.is_favorite = is_favorite;
+            logger.log('[tech-watch/articles/id] Updated article favorite status:', id, is_favorite);
+        }
+
+        return NextResponse.json(result);
     } catch (error) {
         logger.error('[tech-watch/articles/id] PATCH error:', error);
         return NextResponse.json(

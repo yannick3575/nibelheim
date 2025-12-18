@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 
 from src.rss import fetch_hn_feed
 from src.scraper import clean_html_content, fetch_hn_comments
-from src.analyzer import analyze_article
+from src.analyzer import analyze_article, extract_tags_from_analysis
 from src.db import (
     get_supabase_client,
     get_user_id,
@@ -94,6 +94,11 @@ def main():
             logger.warning(f"Skipping '{article['title']}' - analysis failed. Will retry on next run.")
             continue
 
+        # 3b. Extract tags from analysis
+        tags = extract_tags_from_analysis(analysis)
+        if tags:
+            logger.info(f"Extracted tags for '{article['title']}': {tags}")
+
         # 4. Save article to database
         article_id = save_article(
             supabase=supabase,
@@ -103,6 +108,7 @@ def main():
             comments_url=article['comments_link'],
             content=content,
             analysis=analysis,
+            tags=tags,
             published_at=article.get('published')
         )
 

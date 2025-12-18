@@ -58,6 +58,7 @@ def save_article(
     comments_url: str,
     content: str,
     analysis: str,
+    tags: Optional[List[str]] = None,
     published_at: Optional[str] = None
 ) -> Optional[str]:
     """
@@ -72,7 +73,7 @@ def save_article(
             "source": "hacker_news",
             "content": content[:50000] if content else None,  # Limit content size
             "summary": analysis,
-            "tags": [],
+            "tags": tags or [],
             "published_at": published_at,
             "collected_at": datetime.now(timezone.utc).isoformat(),
             "read": False

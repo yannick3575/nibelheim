@@ -3,16 +3,20 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Rss, RefreshCw, Calendar, Loader2, BookOpen } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Rss, RefreshCw, Calendar, Loader2, BookOpen, Star } from 'lucide-react';
 import { DigestList } from './components/digest-list';
 import { ArticleCard } from './components/article-card';
-import type { DigestMeta, DigestWithArticles } from '@/lib/tech-watch';
+import type { DigestMeta, DigestWithArticles, Article } from '@/lib/tech-watch';
 
 export default function TechWatchModule() {
     const [digests, setDigests] = useState<DigestMeta[]>([]);
     const [currentDigest, setCurrentDigest] = useState<DigestWithArticles | null>(null);
+    const [favorites, setFavorites] = useState<Article[]>([]);
     const [selectedDate, setSelectedDate] = useState<string | null>(null);
+    const [activeTab, setActiveTab] = useState<'digest' | 'favorites'>('digest');
     const [loading, setLoading] = useState(true);
+    const [favoritesLoading, setFavoritesLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     // Fetch digest history
@@ -56,10 +60,26 @@ export default function TechWatchModule() {
         }
     }, []);
 
+    // Fetch favorite articles
+    const fetchFavorites = useCallback(async () => {
+        setFavoritesLoading(true);
+        try {
+            const response = await fetch('/api/tech-watch/favorites');
+            if (!response.ok) throw new Error('Failed to fetch favorites');
+            const data = await response.json();
+            setFavorites(data);
+        } catch (err) {
+            console.error('Error fetching favorites:', err);
+        } finally {
+            setFavoritesLoading(false);
+        }
+    }, []);
+
     // Handle date selection from history
     const handleSelectDate = useCallback((date: string) => {
         setSelectedDate(date);
         fetchDigest(date);
+        setActiveTab('digest');
     }, [fetchDigest]);
 
     // Handle article read toggle
@@ -75,11 +95,54 @@ export default function TechWatchModule() {
         }
     }, []);
 
+    // Handle article favorite toggle
+    const handleToggleFavorite = useCallback(async (id: string, is_favorite: boolean) => {
+        const response = await fetch(`/api/tech-watch/articles/${id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ is_favorite })
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to update article');
+        }
+
+        // Update local state for digest articles
+        if (currentDigest) {
+            setCurrentDigest(prev => prev ? {
+                ...prev,
+                articles: prev.articles.map(a =>
+                    a.id === id ? { ...a, is_favorite } : a
+                )
+            } : null);
+        }
+
+        // Update favorites list
+        if (is_favorite) {
+            // Refresh favorites to get the full article
+            fetchFavorites();
+        } else {
+            // Remove from favorites
+            setFavorites(prev => prev.filter(a => a.id !== id));
+        }
+    }, [currentDigest, fetchFavorites]);
+
     // Refresh current view
     const handleRefresh = useCallback(() => {
         fetchDigests();
         fetchDigest(selectedDate || undefined);
-    }, [fetchDigests, fetchDigest, selectedDate]);
+        if (activeTab === 'favorites') {
+            fetchFavorites();
+        }
+    }, [fetchDigests, fetchDigest, fetchFavorites, selectedDate, activeTab]);
+
+    // Handle tab change
+    const handleTabChange = useCallback((value: string) => {
+        setActiveTab(value as 'digest' | 'favorites');
+        if (value === 'favorites' && favorites.length === 0) {
+            fetchFavorites();
+        }
+    }, [favorites.length, fetchFavorites]);
 
     // Initial load
     useEffect(() => {
@@ -108,117 +171,202 @@ export default function TechWatchModule() {
                 </div>
                 <div className="flex gap-2">
                     <Button variant="outline" size="sm" onClick={handleRefresh} className="border-aurora-cyan/30 hover:border-aurora-cyan/50 hover:bg-aurora-cyan/10 transition-all">
-                        <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+                        <RefreshCw className={`mr-2 h-4 w-4 ${loading || favoritesLoading ? 'animate-spin' : ''}`} />
                         Actualiser
                     </Button>
                 </div>
             </div>
 
-            {/* Content Area */}
-            <div className="flex-1 min-h-0">
-                {loading && !currentDigest ? (
-                    <div className="h-64 flex items-center justify-center border rounded-lg border-dashed">
-                        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                    </div>
-                ) : error ? (
-                    <Card className="border-destructive/50">
-                        <CardHeader>
-                            <CardTitle className="text-destructive">Erreur</CardTitle>
-                            <CardDescription>{error}</CardDescription>
-                        </CardHeader>
-                    </Card>
-                ) : currentDigest ? (
-                    <div className="grid gap-6 lg:grid-cols-4">
-                        {/* Main Content Area - Articles */}
-                        <div className="lg:col-span-3 space-y-4">
-                            {/* Digest Header */}
-                            <Card>
-                                <CardHeader className="border-b bg-muted/20">
-                                    <div className="flex justify-between items-center">
-                                        <div className="space-y-1">
-                                            <CardTitle className="flex items-center gap-2">
-                                                <Rss className="h-5 w-5" />
-                                                Daily Digest
-                                            </CardTitle>
-                                            <CardDescription className="flex items-center gap-4">
-                                                <span className="flex items-center">
-                                                    <Calendar className="mr-1.5 h-3.5 w-3.5" />
-                                                    {new Date(currentDigest.period_start).toLocaleDateString('fr-FR', {
-                                                        weekday: 'long',
-                                                        day: 'numeric',
-                                                        month: 'long',
-                                                        year: 'numeric'
-                                                    })}
-                                                </span>
-                                                <span className="flex items-center">
-                                                    <BookOpen className="mr-1.5 h-3.5 w-3.5" />
-                                                    {unreadArticles} / {totalArticles} non lus
-                                                </span>
-                                            </CardDescription>
-                                        </div>
-                                    </div>
-                                </CardHeader>
-                            </Card>
+            {/* Tabs Navigation */}
+            <Tabs value={activeTab} onValueChange={handleTabChange} className="flex-1 flex flex-col min-h-0">
+                <TabsList className="w-fit">
+                    <TabsTrigger value="digest" className="gap-2">
+                        <Rss className="h-4 w-4" />
+                        Daily Digest
+                    </TabsTrigger>
+                    <TabsTrigger value="favorites" className="gap-2">
+                        <Star className="h-4 w-4" />
+                        Favoris
+                        {favorites.length > 0 && (
+                            <span className="ml-1 text-xs bg-yellow-500/20 text-yellow-500 px-1.5 py-0.5 rounded-full">
+                                {favorites.length}
+                            </span>
+                        )}
+                    </TabsTrigger>
+                </TabsList>
 
-                            {/* Individual Article Cards */}
-                            {currentDigest.articles && currentDigest.articles.length > 0 ? (
-                                currentDigest.articles.map((article) => (
+                {/* Daily Digest Tab */}
+                <TabsContent value="digest" className="flex-1 min-h-0 mt-4">
+                    {loading && !currentDigest ? (
+                        <div className="h-64 flex items-center justify-center border rounded-lg border-dashed">
+                            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                        </div>
+                    ) : error ? (
+                        <Card className="border-destructive/50">
+                            <CardHeader>
+                                <CardTitle className="text-destructive">Erreur</CardTitle>
+                                <CardDescription>{error}</CardDescription>
+                            </CardHeader>
+                        </Card>
+                    ) : currentDigest ? (
+                        <div className="grid gap-6 lg:grid-cols-4">
+                            {/* Main Content Area - Articles */}
+                            <div className="lg:col-span-3 space-y-4">
+                                {/* Digest Header */}
+                                <Card>
+                                    <CardHeader className="border-b bg-muted/20">
+                                        <div className="flex justify-between items-center">
+                                            <div className="space-y-1">
+                                                <CardTitle className="flex items-center gap-2">
+                                                    <Rss className="h-5 w-5" />
+                                                    Daily Digest
+                                                </CardTitle>
+                                                <CardDescription className="flex items-center gap-4">
+                                                    <span className="flex items-center">
+                                                        <Calendar className="mr-1.5 h-3.5 w-3.5" />
+                                                        {new Date(currentDigest.period_start).toLocaleDateString('fr-FR', {
+                                                            weekday: 'long',
+                                                            day: 'numeric',
+                                                            month: 'long',
+                                                            year: 'numeric'
+                                                        })}
+                                                    </span>
+                                                    <span className="flex items-center">
+                                                        <BookOpen className="mr-1.5 h-3.5 w-3.5" />
+                                                        {unreadArticles} / {totalArticles} non lus
+                                                    </span>
+                                                </CardDescription>
+                                            </div>
+                                        </div>
+                                    </CardHeader>
+                                </Card>
+
+                                {/* Individual Article Cards */}
+                                {currentDigest.articles && currentDigest.articles.length > 0 ? (
+                                    currentDigest.articles.map((article) => (
+                                        <ArticleCard
+                                            key={article.id}
+                                            article={article}
+                                            onToggleRead={handleToggleRead}
+                                            onToggleFavorite={handleToggleFavorite}
+                                        />
+                                    ))
+                                ) : (
+                                    <Card className="border-dashed">
+                                        <CardContent className="py-8 text-center text-muted-foreground">
+                                            Aucun article dans ce digest
+                                        </CardContent>
+                                    </Card>
+                                )}
+                            </div>
+
+                            {/* Sidebar - History */}
+                            <div className="space-y-4">
+                                <DigestList
+                                    digests={digests}
+                                    selectedDate={selectedDate || currentDigest.period_start.split('T')[0]}
+                                    onSelect={handleSelectDate}
+                                />
+
+                                <Card>
+                                    <CardHeader className="pb-2">
+                                        <CardTitle className="text-sm font-medium">À propos</CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="text-xs text-muted-foreground">
+                                        Contenu généré automatiquement en analysant les top articles de Hacker News (&gt;100 pts) et leurs discussions.
+                                    </CardContent>
+                                </Card>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="grid gap-6 lg:grid-cols-4">
+                            <div className="lg:col-span-3">
+                                <Card className="border-dashed">
+                                    <CardHeader>
+                                        <CardTitle>Aucune veille disponible</CardTitle>
+                                        <CardDescription>
+                                            Le bot n&apos;a pas encore généré de digest.
+                                            Assurez-vous que l&apos;action GitHub a tourné et que les variables d&apos;environnement Supabase sont configurées.
+                                        </CardDescription>
+                                    </CardHeader>
+                                </Card>
+                            </div>
+                            <div className="space-y-4">
+                                <DigestList
+                                    digests={digests}
+                                    selectedDate={null}
+                                    onSelect={handleSelectDate}
+                                />
+                            </div>
+                        </div>
+                    )}
+                </TabsContent>
+
+                {/* Favorites Tab */}
+                <TabsContent value="favorites" className="flex-1 min-h-0 mt-4">
+                    {favoritesLoading ? (
+                        <div className="h-64 flex items-center justify-center border rounded-lg border-dashed">
+                            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                        </div>
+                    ) : favorites.length > 0 ? (
+                        <div className="grid gap-6 lg:grid-cols-4">
+                            <div className="lg:col-span-3 space-y-4">
+                                {/* Favorites Header */}
+                                <Card>
+                                    <CardHeader className="border-b bg-muted/20">
+                                        <div className="flex justify-between items-center">
+                                            <div className="space-y-1">
+                                                <CardTitle className="flex items-center gap-2">
+                                                    <Star className="h-5 w-5 text-yellow-500" />
+                                                    Mes Favoris
+                                                </CardTitle>
+                                                <CardDescription>
+                                                    {favorites.length} article{favorites.length > 1 ? 's' : ''} sauvegardé{favorites.length > 1 ? 's' : ''}
+                                                </CardDescription>
+                                            </div>
+                                        </div>
+                                    </CardHeader>
+                                </Card>
+
+                                {/* Favorite Article Cards */}
+                                {favorites.map((article) => (
                                     <ArticleCard
                                         key={article.id}
                                         article={article}
                                         onToggleRead={handleToggleRead}
+                                        onToggleFavorite={handleToggleFavorite}
                                     />
-                                ))
-                            ) : (
-                                <Card className="border-dashed">
-                                    <CardContent className="py-8 text-center text-muted-foreground">
-                                        Aucun article dans ce digest
+                                ))}
+                            </div>
+
+                            {/* Sidebar */}
+                            <div className="space-y-4">
+                                <Card>
+                                    <CardHeader className="pb-2">
+                                        <CardTitle className="text-sm font-medium">À propos des Favoris</CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="text-xs text-muted-foreground">
+                                        Les articles favoris sont sauvegardés pour référence future. Cliquez sur l&apos;étoile pour ajouter ou retirer un article de vos favoris.
                                     </CardContent>
                                 </Card>
-                            )}
+                            </div>
                         </div>
-
-                        {/* Sidebar - History */}
-                        <div className="space-y-4">
-                            <DigestList
-                                digests={digests}
-                                selectedDate={selectedDate || currentDigest.period_start.split('T')[0]}
-                                onSelect={handleSelectDate}
-                            />
-
-                            <Card>
-                                <CardHeader className="pb-2">
-                                    <CardTitle className="text-sm font-medium">À propos</CardTitle>
-                                </CardHeader>
-                                <CardContent className="text-xs text-muted-foreground">
-                                    Contenu généré automatiquement en analysant les top articles de Hacker News (&gt;100 pts) et leurs discussions.
-                                </CardContent>
-                            </Card>
-                        </div>
-                    </div>
-                ) : (
-                    <div className="grid gap-6 lg:grid-cols-4">
-                        <div className="lg:col-span-3">
-                            <Card className="border-dashed">
-                                <CardHeader>
-                                    <CardTitle>Aucune veille disponible</CardTitle>
-                                    <CardDescription>
-                                        Le bot n&apos;a pas encore généré de digest.
-                                        Assurez-vous que l&apos;action GitHub a tourné et que les variables d&apos;environnement Supabase sont configurées.
-                                    </CardDescription>
-                                </CardHeader>
-                            </Card>
-                        </div>
-                        <div className="space-y-4">
-                            <DigestList
-                                digests={digests}
-                                selectedDate={null}
-                                onSelect={handleSelectDate}
-                            />
-                        </div>
-                    </div>
-                )}
-            </div>
+                    ) : (
+                        <Card className="border-dashed">
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2">
+                                    <Star className="h-5 w-5" />
+                                    Aucun favori
+                                </CardTitle>
+                                <CardDescription>
+                                    Vous n&apos;avez pas encore ajouté d&apos;articles à vos favoris.
+                                    Cliquez sur l&apos;étoile d&apos;un article pour le sauvegarder ici.
+                                </CardDescription>
+                            </CardHeader>
+                        </Card>
+                    )}
+                </TabsContent>
+            </Tabs>
         </div>
     );
 }

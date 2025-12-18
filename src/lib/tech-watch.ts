@@ -16,6 +16,7 @@ export interface Article {
     published_at: string | null;
     collected_at: string;
     read: boolean;
+    is_favorite: boolean;
 }
 
 export interface Digest {
@@ -199,6 +200,45 @@ export async function toggleArticleRead(id: string, read: boolean): Promise<bool
     }
 
     return true;
+}
+
+/**
+ * Toggle article favorite status
+ */
+export async function toggleArticleFavorite(id: string, is_favorite: boolean): Promise<boolean> {
+    const supabase = await createClient();
+
+    const { error } = await supabase
+        .from('tech_watch_articles')
+        .update({ is_favorite })
+        .eq('id', id);
+
+    if (error) {
+        console.error('Error updating article favorite status:', error);
+        return false;
+    }
+
+    return true;
+}
+
+/**
+ * Get all favorite articles for the current user
+ */
+export async function getFavoriteArticles(): Promise<Article[]> {
+    const supabase = await createClient();
+
+    const { data, error } = await supabase
+        .from('tech_watch_articles')
+        .select('*')
+        .eq('is_favorite', true)
+        .order('collected_at', { ascending: false });
+
+    if (error) {
+        console.error('Error fetching favorite articles:', error);
+        return [];
+    }
+
+    return data || [];
 }
 
 // ============================================

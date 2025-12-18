@@ -1,7 +1,8 @@
 import os
 import logging
 import time
-from typing import Dict, Any, List
+import re
+from typing import Dict, Any, List, Tuple, Optional
 import google.generativeai as genai
 from google.api_core import exceptions as google_exceptions
 
@@ -23,7 +24,43 @@ Le Pitch : En une phrase, quelle est l'innovation prétendue ?
 Le Verdict Communautaire : Est-ce que les experts de Hacker News valident ou détruisent l'idée ? Identifie les contre-arguments techniques majeurs.
 
 TL;DR Pépite : Est-ce que je dois vraiment lire cet article ou est-ce juste du marketing ? Sois tranchant.
+
+Metadata : Génère 3 tags techniques précis pour l'indexation sémantique, formatés ainsi: Tags: [tag1, tag2, tag3]
+
+Warning : Si une information est incertaine ou la source mal formée, ajoute obligatoirement [⚠️] devant l'explication.
 """
+
+
+def extract_tags_from_analysis(analysis: str) -> List[str]:
+    """
+    Extract tags from the analysis text.
+    Looks for pattern: Tags: [tag1, tag2, tag3]
+    Returns empty list if no tags found.
+    """
+    if not analysis:
+        return []
+
+    # Pattern: Tags: [tag1, tag2, tag3] or Tags: tag1, tag2, tag3
+    patterns = [
+        r'Tags?\s*:\s*\[([^\]]+)\]',  # Tags: [tag1, tag2, tag3]
+        r'Tags?\s*:\s*([^\n]+)',       # Tags: tag1, tag2, tag3
+    ]
+
+    for pattern in patterns:
+        match = re.search(pattern, analysis, re.IGNORECASE)
+        if match:
+            tags_str = match.group(1)
+            # Split by comma and clean up
+            tags = [tag.strip().strip('"\'') for tag in tags_str.split(',')]
+            # Filter empty and limit to 5 tags
+            tags = [t for t in tags if t and len(t) > 1][:5]
+            if tags:
+                logger.debug(f"Extracted tags: {tags}")
+                return tags
+
+    logger.debug("No tags found in analysis")
+    return []
+
 
 def _wait_for_rate_limit():
     """Enforce rate limiting between API requests."""
