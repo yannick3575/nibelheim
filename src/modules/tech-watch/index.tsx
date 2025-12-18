@@ -144,10 +144,9 @@ export default function TechWatchModule() {
         }
     }, [favorites.length, fetchFavorites]);
 
-    // Initial load
+    // Initial load - fetch in parallel to avoid waterfall
     useEffect(() => {
-        fetchDigests();
-        fetchDigest();
+        Promise.all([fetchDigests(), fetchDigest()]);
     }, [fetchDigests, fetchDigest]);
 
     // Calculate stats
