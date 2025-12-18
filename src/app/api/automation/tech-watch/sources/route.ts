@@ -12,7 +12,7 @@ const createSourceSchema = z.object({
     type: z.enum(['rss', 'api', 'manual']),
     name: z.string().min(1).max(200),
     url: z.string().url().optional(),
-    config: z.record(z.unknown()).optional(),
+    config: z.record(z.string(), z.unknown()).optional(),
 });
 
 // ============================================

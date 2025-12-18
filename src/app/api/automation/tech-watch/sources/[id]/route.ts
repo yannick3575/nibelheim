@@ -17,7 +17,7 @@ interface RouteParams {
 const updateSourceSchema = z.object({
     name: z.string().min(1).max(200).optional(),
     url: z.string().url().optional(),
-    config: z.record(z.unknown()).optional(),
+    config: z.record(z.string(), z.unknown()).optional(),
     enabled: z.boolean().optional(),
 }).refine(data => Object.keys(data).length > 0, {
     message: 'At least one field must be provided',
