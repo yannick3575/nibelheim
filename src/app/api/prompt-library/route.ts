@@ -39,7 +39,10 @@ export async function GET(request: NextRequest) {
     if (search) filters.search = search;
 
     const prompts = await getPrompts(filters);
-    return NextResponse.json(prompts);
+    const response = NextResponse.json(prompts);
+    // Cache for 2 minutes, allow stale for 30 minutes while revalidating
+    response.headers.set('Cache-Control', 'public, s-maxage=120, stale-while-revalidate=1800');
+    return response;
   } catch (error) {
     logger.error('[prompt-library] GET error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

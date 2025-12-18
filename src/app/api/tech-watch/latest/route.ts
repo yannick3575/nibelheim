@@ -13,7 +13,10 @@ export async function GET() {
             );
         }
 
-        return NextResponse.json(digest);
+        const response = NextResponse.json(digest);
+        // Cache for 5 minutes, allow stale for 1 hour while revalidating
+        response.headers.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=3600');
+        return response;
     } catch (error) {
         logger.error('[tech-watch/latest] GET error:', error);
         return NextResponse.json(

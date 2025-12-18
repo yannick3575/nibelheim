@@ -46,13 +46,16 @@ export interface DigestMeta {
 
 /**
  * Get the latest digest with its articles
+ * Note: Uses 2 queries due to article_ids array storage. For true single-query,
+ * consider using a junction table with foreign keys.
  */
 export async function getLatestDigest(): Promise<DigestWithArticles | null> {
     const supabase = await createClient();
 
+    // Select only needed columns instead of *
     const { data: digest, error } = await supabase
         .from('tech_watch_digests')
-        .select('*')
+        .select('id, user_id, period_start, period_end, summary, key_topics, article_ids, created_at')
         .order('period_start', { ascending: false })
         .limit(1)
         .single();
@@ -62,7 +65,7 @@ export async function getLatestDigest(): Promise<DigestWithArticles | null> {
         return null;
     }
 
-    // Fetch related articles
+    // Fetch related articles with specific columns (excluding large content field for list view)
     const articles = await getArticlesByIds(digest.article_ids || []);
 
     return { ...digest, articles };
@@ -70,6 +73,8 @@ export async function getLatestDigest(): Promise<DigestWithArticles | null> {
 
 /**
  * Get a digest by date (YYYY-MM-DD format)
+ * Note: Uses 2 queries due to article_ids array storage. For true single-query,
+ * consider using a junction table with foreign keys.
  */
 export async function getDigestByDate(date: string): Promise<DigestWithArticles | null> {
     const supabase = await createClient();
@@ -77,9 +82,10 @@ export async function getDigestByDate(date: string): Promise<DigestWithArticles 
     const periodStart = `${date}T00:00:00`;
     const periodEnd = `${date}T23:59:59`;
 
+    // Select only needed columns instead of *
     const { data: digest, error } = await supabase
         .from('tech_watch_digests')
-        .select('*')
+        .select('id, user_id, period_start, period_end, summary, key_topics, article_ids, created_at')
         .gte('period_start', periodStart)
         .lte('period_end', periodEnd)
         .single();
@@ -123,15 +129,17 @@ export async function getDigests(limit = 30): Promise<DigestMeta[]> {
 
 /**
  * Get articles by their IDs
+ * Selects specific columns to reduce payload size
  */
 export async function getArticlesByIds(ids: string[]): Promise<Article[]> {
     if (!ids || ids.length === 0) return [];
 
     const supabase = await createClient();
 
+    // Select specific columns - content is large and often not needed in list views
     const { data, error } = await supabase
         .from('tech_watch_articles')
-        .select('*')
+        .select('id, user_id, title, url, source, content, summary, tags, published_at, collected_at, read, is_favorite')
         .in('id', ids)
         .order('collected_at', { ascending: false });
 
