@@ -62,8 +62,8 @@ export function ArticleCard({ article, onToggleRead, onToggleFavorite }: Article
             "transition-opacity",
             isRead && "opacity-60"
         )}>
-            <CardHeader className="pb-3">
-                <div className="flex items-start justify-between gap-4">
+            <CardHeader className="pb-3 p-4 sm:p-6">
+                <div className="flex items-start justify-between gap-2 sm:gap-4">
                     <div className="flex-1 min-w-0">
                         <a
                             href={article.url}
@@ -71,12 +71,12 @@ export function ArticleCard({ article, onToggleRead, onToggleFavorite }: Article
                             rel="noopener noreferrer"
                             className="group"
                         >
-                            <CardTitle className="text-base font-semibold leading-tight group-hover:underline flex items-center gap-2">
-                                {article.title}
-                                <ExternalLink className="h-3.5 w-3.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+                            <CardTitle className="text-sm sm:text-base font-semibold leading-tight group-hover:underline flex items-center gap-2">
+                                <span className="break-words">{article.title}</span>
+                                <ExternalLink className="h-3 w-3 sm:h-3.5 sm:w-3.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
                             </CardTitle>
                         </a>
-                        <CardDescription className="mt-1.5 flex items-center gap-3 flex-wrap">
+                        <CardDescription className="mt-1.5 flex items-center gap-2 sm:gap-3 flex-wrap text-xs sm:text-sm">
                             <span className="capitalize">{article.source.replace('_', ' ')}</span>
                             {hnUrl && (
                                 <a
@@ -85,12 +85,12 @@ export function ArticleCard({ article, onToggleRead, onToggleFavorite }: Article
                                     rel="noopener noreferrer"
                                     className="flex items-center gap-1 text-orange-500 hover:text-orange-400 transition-colors"
                                 >
-                                    <MessageSquare className="h-3.5 w-3.5" />
-                                    <span>Discussion</span>
+                                    <MessageSquare className="h-3 w-3 sm:h-3.5 sm:w-3.5 flex-shrink-0" />
+                                    <span className="hidden sm:inline">Discussion</span>
                                 </a>
                             )}
                             {article.tags && article.tags.length > 0 && (
-                                <div className="flex items-center gap-1">
+                                <div className="flex items-center gap-1 flex-wrap">
                                     {article.tags.slice(0, 3).map((tag) => (
                                         <Badge key={tag} variant="secondary" className="text-xs">
                                             {tag}
@@ -100,7 +100,7 @@ export function ArticleCard({ article, onToggleRead, onToggleFavorite }: Article
                             )}
                         </CardDescription>
                     </div>
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0">
                         {onToggleFavorite && (
                             <Button
                                 variant="ghost"
@@ -108,12 +108,12 @@ export function ArticleCard({ article, onToggleRead, onToggleFavorite }: Article
                                 onClick={handleToggleFavorite}
                                 disabled={isFavoriteUpdating}
                                 className={cn(
-                                    "flex-shrink-0 h-8 w-8",
+                                    "flex-shrink-0 h-7 w-7 sm:h-8 sm:w-8 p-0",
                                     isFavorite && "text-yellow-500"
                                 )}
                                 title={isFavorite ? "Retirer des favoris" : "Ajouter aux favoris"}
                             >
-                                <Star className={cn("h-4 w-4", isFavorite && "fill-yellow-500")} />
+                                <Star className={cn("h-3.5 w-3.5 sm:h-4 sm:w-4", isFavorite && "fill-yellow-500")} />
                             </Button>
                         )}
                         <Button
@@ -122,22 +122,22 @@ export function ArticleCard({ article, onToggleRead, onToggleFavorite }: Article
                             onClick={handleToggleRead}
                             disabled={isUpdating}
                             className={cn(
-                                "flex-shrink-0 h-8 w-8",
+                                "flex-shrink-0 h-7 w-7 sm:h-8 sm:w-8 p-0",
                                 isRead && "text-green-500 hover:text-green-400"
                             )}
                             title={isRead ? "Marquer comme non lu" : "Marquer comme lu"}
                         >
                             {isRead ? (
-                                <Check className="h-4 w-4" />
+                                <Check className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                             ) : (
-                                <Circle className="h-4 w-4" />
+                                <Circle className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                             )}
                         </Button>
                     </div>
                 </div>
             </CardHeader>
             {article.summary && (
-                <CardContent className="pt-0">
+                <CardContent className="pt-0 px-4 sm:px-6 pb-4 sm:pb-6">
                     <MarkdownRenderer content={article.summary} />
                 </CardContent>
             )}

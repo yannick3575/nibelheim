@@ -155,36 +155,36 @@ export default function TechWatchModule() {
     const unreadArticles = currentDigest?.articles?.filter(a => !a.read).length || 0;
 
     return (
-        <div className="space-y-6 h-full flex flex-col">
+        <div className="space-y-4 sm:space-y-6 h-full flex flex-col">
             {/* Header with Aurora accent */}
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-aurora-cyan/20 to-aurora-teal/20 text-aurora-cyan border border-aurora-cyan/20">
-                        <Rss className="h-6 w-6" />
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+                    <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-xl bg-gradient-to-br from-aurora-cyan/20 to-aurora-teal/20 text-aurora-cyan border border-aurora-cyan/20 flex-shrink-0">
+                        <Rss className="h-5 w-5 sm:h-6 sm:w-6" />
                     </div>
-                    <div>
-                        <h1 className="text-3xl font-bold tracking-tight">Tech Watch</h1>
-                        <p className="text-muted-foreground">
+                    <div className="min-w-0 flex-1">
+                        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Tech Watch</h1>
+                        <p className="text-sm sm:text-base text-muted-foreground hidden sm:block">
                             Veille technologique automatisée via Gemini
                         </p>
                     </div>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 sm:flex-shrink-0">
                     <Button variant="outline" size="sm" onClick={handleRefresh} className="border-aurora-cyan/30 hover:border-aurora-cyan/50 hover:bg-aurora-cyan/10 transition-all">
-                        <RefreshCw className={`mr-2 h-4 w-4 ${loading || favoritesLoading ? 'animate-spin' : ''}`} />
-                        Actualiser
+                        <RefreshCw className={`sm:mr-2 h-4 w-4 ${loading || favoritesLoading ? 'animate-spin' : ''}`} />
+                        <span className="hidden sm:inline">Actualiser</span>
                     </Button>
                 </div>
             </div>
 
             {/* Tabs Navigation */}
             <Tabs value={activeTab} onValueChange={handleTabChange} className="flex-1 flex flex-col min-h-0">
-                <TabsList className="w-fit">
-                    <TabsTrigger value="digest" className="gap-2">
+                <TabsList className="w-full sm:w-fit grid grid-cols-2 sm:flex">
+                    <TabsTrigger value="digest" className="gap-1 sm:gap-2">
                         <Rss className="h-4 w-4" />
-                        Daily Digest
+                        <span className="hidden sm:inline">Daily </span>Digest
                     </TabsTrigger>
-                    <TabsTrigger value="favorites" className="gap-2">
+                    <TabsTrigger value="favorites" className="gap-1 sm:gap-2">
                         <Star className="h-4 w-4" />
                         Favoris
                         {favorites.length > 0 && (
@@ -209,30 +209,32 @@ export default function TechWatchModule() {
                             </CardHeader>
                         </Card>
                     ) : currentDigest ? (
-                        <div className="grid gap-6 lg:grid-cols-4">
+                        <div className="grid gap-4 sm:gap-6 lg:grid-cols-4">
                             {/* Main Content Area - Articles */}
-                            <div className="lg:col-span-3 space-y-4">
+                            <div className="lg:col-span-3 space-y-3 sm:space-y-4 order-2 lg:order-1">
                                 {/* Digest Header */}
                                 <Card>
-                                    <CardHeader className="border-b bg-muted/20">
-                                        <div className="flex justify-between items-center">
-                                            <div className="space-y-1">
-                                                <CardTitle className="flex items-center gap-2">
-                                                    <Rss className="h-5 w-5" />
-                                                    Daily Digest
+                                    <CardHeader className="border-b bg-muted/20 p-4 sm:p-6">
+                                        <div className="flex justify-between items-start sm:items-center">
+                                            <div className="space-y-1 min-w-0 flex-1">
+                                                <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                                                    <Rss className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
+                                                    <span className="truncate">Daily Digest</span>
                                                 </CardTitle>
-                                                <CardDescription className="flex items-center gap-4">
+                                                <CardDescription className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-xs sm:text-sm">
                                                     <span className="flex items-center">
-                                                        <Calendar className="mr-1.5 h-3.5 w-3.5" />
-                                                        {new Date(currentDigest.period_start).toLocaleDateString('fr-FR', {
-                                                            weekday: 'long',
-                                                            day: 'numeric',
-                                                            month: 'long',
-                                                            year: 'numeric'
-                                                        })}
+                                                        <Calendar className="mr-1.5 h-3 w-3 sm:h-3.5 sm:w-3.5 flex-shrink-0" />
+                                                        <span className="truncate">
+                                                            {new Date(currentDigest.period_start).toLocaleDateString('fr-FR', {
+                                                                weekday: 'short',
+                                                                day: 'numeric',
+                                                                month: 'short',
+                                                                year: 'numeric'
+                                                            })}
+                                                        </span>
                                                     </span>
                                                     <span className="flex items-center">
-                                                        <BookOpen className="mr-1.5 h-3.5 w-3.5" />
+                                                        <BookOpen className="mr-1.5 h-3 w-3 sm:h-3.5 sm:w-3.5 flex-shrink-0" />
                                                         {unreadArticles} / {totalArticles} non lus
                                                     </span>
                                                 </CardDescription>
@@ -261,14 +263,14 @@ export default function TechWatchModule() {
                             </div>
 
                             {/* Sidebar - History */}
-                            <div className="space-y-4">
+                            <div className="space-y-4 order-1 lg:order-2">
                                 <DigestList
                                     digests={digests}
                                     selectedDate={selectedDate || currentDigest.period_start.split('T')[0]}
                                     onSelect={handleSelectDate}
                                 />
 
-                                <Card>
+                                <Card className="hidden lg:block">
                                     <CardHeader className="pb-2">
                                         <CardTitle className="text-sm font-medium">À propos</CardTitle>
                                     </CardHeader>
@@ -279,8 +281,8 @@ export default function TechWatchModule() {
                             </div>
                         </div>
                     ) : (
-                        <div className="grid gap-6 lg:grid-cols-4">
-                            <div className="lg:col-span-3">
+                        <div className="grid gap-4 sm:gap-6 lg:grid-cols-4">
+                            <div className="lg:col-span-3 order-2 lg:order-1">
                                 <Card className="border-dashed">
                                     <CardHeader>
                                         <CardTitle>Aucune veille disponible</CardTitle>
@@ -291,7 +293,7 @@ export default function TechWatchModule() {
                                     </CardHeader>
                                 </Card>
                             </div>
-                            <div className="space-y-4">
+                            <div className="space-y-4 order-1 lg:order-2">
                                 <DigestList
                                     digests={digests}
                                     selectedDate={null}
@@ -309,18 +311,18 @@ export default function TechWatchModule() {
                             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                         </div>
                     ) : favorites.length > 0 ? (
-                        <div className="grid gap-6 lg:grid-cols-4">
-                            <div className="lg:col-span-3 space-y-4">
+                        <div className="grid gap-4 sm:gap-6 lg:grid-cols-4">
+                            <div className="lg:col-span-3 space-y-3 sm:space-y-4 order-2 lg:order-1">
                                 {/* Favorites Header */}
                                 <Card>
-                                    <CardHeader className="border-b bg-muted/20">
-                                        <div className="flex justify-between items-center">
-                                            <div className="space-y-1">
-                                                <CardTitle className="flex items-center gap-2">
-                                                    <Star className="h-5 w-5 text-yellow-500" />
-                                                    Mes Favoris
+                                    <CardHeader className="border-b bg-muted/20 p-4 sm:p-6">
+                                        <div className="flex justify-between items-start sm:items-center">
+                                            <div className="space-y-1 min-w-0 flex-1">
+                                                <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                                                    <Star className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-500 flex-shrink-0" />
+                                                    <span className="truncate">Mes Favoris</span>
                                                 </CardTitle>
-                                                <CardDescription>
+                                                <CardDescription className="text-xs sm:text-sm">
                                                     {favorites.length} article{favorites.length > 1 ? 's' : ''} sauvegardé{favorites.length > 1 ? 's' : ''}
                                                 </CardDescription>
                                             </div>
@@ -340,8 +342,8 @@ export default function TechWatchModule() {
                             </div>
 
                             {/* Sidebar */}
-                            <div className="space-y-4">
-                                <Card>
+                            <div className="space-y-4 order-1 lg:order-2">
+                                <Card className="hidden lg:block">
                                     <CardHeader className="pb-2">
                                         <CardTitle className="text-sm font-medium">À propos des Favoris</CardTitle>
                                     </CardHeader>
