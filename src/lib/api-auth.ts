@@ -71,16 +71,10 @@ export async function validateApiToken(request: NextRequest): Promise<AuthContex
     }
 
     // Update last_used_at asynchronously (fire and forget)
-    supabase
+    void supabase
         .from('api_tokens')
         .update({ last_used_at: new Date().toISOString() })
-        .eq('id', apiToken.id)
-        .then(() => {
-            // Silent success
-        })
-        .catch(() => {
-            // Silent failure - don't block the request
-        });
+        .eq('id', apiToken.id);
 
     return {
         userId: apiToken.user_id,
