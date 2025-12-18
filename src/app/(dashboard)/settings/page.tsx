@@ -1,16 +1,18 @@
 'use client';
 
 import { useState } from 'react';
-import { User, Rss, Settings } from 'lucide-react';
+import { User, Rss, Settings, Key } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ProfileForm } from '@/components/settings/profile-form';
 import { TechWatchSettings } from '@/components/settings/tech-watch-settings';
+import { ApiTokensSettings } from '@/components/settings/api-tokens-settings';
 
-type Tab = 'profile' | 'tech-watch';
+type Tab = 'profile' | 'tech-watch' | 'api-tokens';
 
 const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
     { id: 'profile', label: 'Profil', icon: <User className="h-4 w-4" /> },
     { id: 'tech-watch', label: 'Tech Watch', icon: <Rss className="h-4 w-4" /> },
+    { id: 'api-tokens', label: 'API Tokens', icon: <Key className="h-4 w-4" /> },
 ];
 
 export default function SettingsPage() {
@@ -53,9 +55,10 @@ export default function SettingsPage() {
             </div>
 
             {/* Tab Content */}
-            <div className="max-w-2xl">
+            <div className={activeTab === 'api-tokens' ? 'max-w-5xl' : 'max-w-2xl'}>
                 {activeTab === 'profile' && <ProfileForm />}
                 {activeTab === 'tech-watch' && <TechWatchSettings />}
+                {activeTab === 'api-tokens' && <ApiTokensSettings />}
             </div>
         </div>
     );

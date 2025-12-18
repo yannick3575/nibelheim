@@ -40,6 +40,12 @@ export async function updateSession(request: NextRequest) {
         request.nextUrl.pathname.startsWith(route)
     );
 
+    // Automation API routes use token-based auth, skip session check
+    const isAutomationRoute = request.nextUrl.pathname.startsWith('/api/automation');
+    if (isAutomationRoute) {
+        return supabaseResponse;
+    }
+
     // Redirect to login if not authenticated and not on a public route
     if (!user && !isPublicRoute) {
         const url = request.nextUrl.clone();
