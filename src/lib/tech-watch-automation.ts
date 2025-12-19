@@ -5,7 +5,7 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
-import { Article, Source } from './tech-watch';
+import { Article, Source, Digest } from './tech-watch';
 
 // ============================================
 // SUPABASE SERVICE CLIENT
@@ -35,6 +35,7 @@ export interface CreateArticleInput {
 /**
  * Create a new article for a specific user
  * Used by automation APIs
+ * Automatically links the article to a digest based on published_at date
  */
 export async function createArticle(
     userId: string,
@@ -70,11 +71,29 @@ export async function createArticle(
                 .eq('url', input.url)
                 .single();
 
+            // Try to add to digest even if duplicate (in case it wasn't linked before)
+            if (existing) {
+                await addArticleToDigest(userId, existing.id, existing.published_at);
+            }
+
             return existing;
         }
 
         console.error('Error creating article:', error);
         return null;
+    }
+
+    // Automatically link article to digest
+    if (data) {
+        const linkedToDigest = await addArticleToDigest(
+            userId,
+            data.id,
+            data.published_at
+        );
+
+        if (!linkedToDigest) {
+            console.warn(`Article ${data.id} created but not linked to digest`);
+        }
     }
 
     return data;
@@ -136,6 +155,113 @@ export async function updateArticle(
         return false;
     }
 
+    return true;
+}
+
+// ============================================
+// DIGEST FUNCTIONS (with explicit user_id)
+// ============================================
+
+/**
+ * Find or create a digest for a specific date
+ * @param userId - The user ID
+ * @param date - Date in YYYY-MM-DD format
+ * @returns The digest for the specified date
+ */
+export async function findOrCreateDigest(
+    userId: string,
+    date: string
+): Promise<Digest | null> {
+    const supabase = getServiceClient();
+
+    const periodStart = `${date}T00:00:00`;
+    const periodEnd = `${date}T23:59:59`;
+
+    // Try to find existing digest
+    const { data: existing } = await supabase
+        .from('tech_watch_digests')
+        .select('*')
+        .eq('user_id', userId)
+        .gte('period_start', periodStart)
+        .lte('period_end', periodEnd)
+        .single();
+
+    if (existing) {
+        return existing;
+    }
+
+    // Create new digest if none exists
+    const { data, error } = await supabase
+        .from('tech_watch_digests')
+        .insert({
+            user_id: userId,
+            period_start: periodStart,
+            period_end: periodEnd,
+            summary: 'Articles collectés automatiquement',
+            key_topics: [],
+            article_ids: [],
+        })
+        .select()
+        .single();
+
+    if (error) {
+        console.error('Error creating digest:', error);
+        return null;
+    }
+
+    return data;
+}
+
+/**
+ * Add an article to a digest
+ * This function finds or creates a digest for the article's date and adds the article ID
+ * @param userId - The user ID
+ * @param articleId - The article ID to add
+ * @param publishedAt - The article's published_at date (ISO format) or null for today
+ * @returns Success status
+ */
+export async function addArticleToDigest(
+    userId: string,
+    articleId: string,
+    publishedAt: string | null
+): Promise<boolean> {
+    const supabase = getServiceClient();
+
+    // Extract date from published_at or use today
+    let date: string;
+    if (publishedAt) {
+        date = publishedAt.split('T')[0]; // Extract YYYY-MM-DD
+    } else {
+        date = new Date().toISOString().split('T')[0];
+    }
+
+    // Find or create digest
+    const digest = await findOrCreateDigest(userId, date);
+    if (!digest) {
+        console.error('Failed to find or create digest for date:', date);
+        return false;
+    }
+
+    // Add article ID to digest if not already present
+    const articleIds = digest.article_ids || [];
+    if (articleIds.includes(articleId)) {
+        // Article already in digest
+        return true;
+    }
+
+    const updatedArticleIds = [...articleIds, articleId];
+
+    const { error } = await supabase
+        .from('tech_watch_digests')
+        .update({ article_ids: updatedArticleIds })
+        .eq('id', digest.id);
+
+    if (error) {
+        console.error('Error adding article to digest:', error);
+        return false;
+    }
+
+    console.log(`Article ${articleId} added to digest ${digest.id} for date ${date}`);
     return true;
 }
 
