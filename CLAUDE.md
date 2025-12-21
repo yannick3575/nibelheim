@@ -45,7 +45,70 @@ To create a new module, copy `src/modules/_template/` and register it in `regist
 ### Database (Supabase PostgreSQL)
 Core tables: `profiles`, `user_modules`, `module_data`
 Tech Watch tables: `tech_watch_articles`, `tech_watch_digests`, `tech_watch_sources`
+Prompt Library tables: `prompts`, `prompt_executions`
 Uses pgvector for embeddings and RLS for data isolation.
+
+## Active Modules
+
+### Tech Watch
+**Path**: `src/modules/tech-watch/`
+**Description**: Automated tech monitoring with AI-powered summaries and semantic memory
+
+**Features**:
+- Daily digest of top Hacker News articles (>100 points)
+- AI analysis using Gemini with "Skeptical CTO" persona
+- Article favorites and read/unread tracking
+- Historical digest browsing
+- Semantic search via pgvector embeddings
+
+**Architecture**:
+- **Frontend**: React component with tabs (Daily Digest / Favorites)
+- **Backend**: Python bot (`scripts/tech-watch-bot/`) running on GitHub Actions
+- **API Routes**:
+  - `GET /api/tech-watch/latest` - Latest digest
+  - `GET /api/tech-watch/digests` - Digest history
+  - `GET /api/tech-watch/digests/[date]` - Specific digest
+  - `GET /api/tech-watch/favorites` - Favorite articles
+  - `PATCH /api/tech-watch/articles/[id]` - Update article (read/favorite status)
+
+**Bot Workflow**:
+1. Fetches Hacker News RSS feed
+2. Filters articles >100 points
+3. Extracts full content + top HN comments
+4. Sends to Gemini for analysis
+5. Generates structured markdown digest
+6. Commits to Supabase via GitHub Actions
+
+### Prompt Library
+**Path**: `src/modules/prompt-library/`
+**Description**: Reusable prompt templates with variables and categorization
+
+**Features**:
+- Create, edit, delete prompts with variable placeholders (`{{variable}}`)
+- Category organization (Development, Writing, Analysis, Marketing, Other)
+- Favorites system
+- Search and filter by category
+- Copy to clipboard functionality
+- Grid/List view modes
+- Variable substitution UI
+
+**Architecture**:
+- **Frontend**: React component with card/list views
+- **Components**: 
+  - `PromptCard` - Grid view item
+  - `PromptListItem` - List view item
+  - `CreatePromptDialog` - Create/edit dialog
+  - `FilterBar` - Search and category filters
+  - `PromptExecutor` - Variable substitution interface
+- **API Routes**:
+  - `GET /api/prompt-library` - List prompts (supports `?category=`, `?favorites=true`, `?search=`)
+  - `POST /api/prompt-library` - Create prompt
+  - `PATCH /api/prompt-library/[id]` - Update prompt
+  - `DELETE /api/prompt-library/[id]` - Delete prompt
+
+**Database Schema**:
+- `prompts`: id, user_id, title, content, category, tags, is_favorite, created_at, updated_at
+- `prompt_executions`: id, prompt_id, user_id, variables, executed_at (for usage tracking)
 
 ## Conventions
 
