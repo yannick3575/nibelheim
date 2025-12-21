@@ -9,33 +9,28 @@ export default function DashboardPage() {
 
     return (
         <div className="space-y-8">
-            {/* Hero Aurora Section */}
-            <div className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-gradient-to-br from-background/80 to-background/40 backdrop-blur-sm">
-                {/* Animated aurora orbs */}
+            {/* Hero Vision UI Section - More subtle */}
+            <div className="relative overflow-hidden rounded-2xl glass-vision-strong">
+                {/* Vision UI: Noise + Grid overlays */}
+                <div className="noise absolute inset-0 pointer-events-none opacity-30" />
+                <div className="grid-pattern absolute inset-0 pointer-events-none opacity-20" />
+
+                {/* Subtle aurora orbs - reduced opacity */}
                 <div className="absolute inset-0 overflow-hidden">
                     <div
-                        className="absolute -top-1/2 -left-1/4 w-[600px] h-[600px] rounded-full opacity-30"
+                        className="absolute -top-1/2 -left-1/4 w-[600px] h-[600px] rounded-full opacity-15"
                         style={{
-                            background: 'radial-gradient(circle, oklch(0.75 0.18 195 / 50%) 0%, transparent 70%)',
-                            filter: 'blur(60px)',
-                            animation: 'aurora-float 15s ease-in-out infinite',
+                            background: 'radial-gradient(circle, oklch(0.72 0.24 210 / 50%) 0%, transparent 70%)',
+                            filter: 'blur(80px)',
+                            animation: 'aurora-float 20s ease-in-out infinite',
                         }}
                     />
                     <div
-                        className="absolute -bottom-1/3 -right-1/4 w-[500px] h-[500px] rounded-full opacity-25"
+                        className="absolute -bottom-1/3 -right-1/4 w-[500px] h-[500px] rounded-full opacity-12"
                         style={{
-                            background: 'radial-gradient(circle, oklch(0.65 0.25 300 / 50%) 0%, transparent 70%)',
-                            filter: 'blur(60px)',
-                            animation: 'aurora-float 18s ease-in-out infinite reverse',
-                        }}
-                    />
-                    <div
-                        className="absolute top-1/4 right-1/4 w-[300px] h-[300px] rounded-full opacity-20"
-                        style={{
-                            background: 'radial-gradient(circle, oklch(0.70 0.25 330 / 40%) 0%, transparent 70%)',
-                            filter: 'blur(50px)',
-                            animation: 'aurora-float 12s ease-in-out infinite',
-                            animationDelay: '-5s',
+                            background: 'radial-gradient(circle, oklch(0.68 0.28 285 / 50%) 0%, transparent 70%)',
+                            filter: 'blur(80px)',
+                            animation: 'aurora-float 25s ease-in-out infinite reverse',
                         }}
                     />
                 </div>
@@ -61,12 +56,12 @@ export default function DashboardPage() {
                             </p>
                         </div>
 
-                        {/* Decorative element */}
+                        {/* Decorative element - Vision UI neon glow */}
                         <div className="hidden lg:flex items-center justify-center">
                             <div className="relative">
-                                <div className="absolute inset-0 aurora-glow-strong rounded-full animate-pulse" />
-                                <div className="relative flex h-32 w-32 items-center justify-center rounded-full border border-white/10 bg-gradient-to-br from-white/5 to-transparent backdrop-blur-sm">
-                                    <Sparkles className="h-12 w-12 text-aurora-cyan" />
+                                <div className="absolute inset-0 neon-glow rounded-full animate-pulse" />
+                                <div className="relative flex h-32 w-32 items-center justify-center rounded-full glass-vision neon-border">
+                                    <Sparkles className="h-12 w-12 text-primary" />
                                 </div>
                             </div>
                         </div>
@@ -87,15 +82,16 @@ export default function DashboardPage() {
                     {enabledModules.map((module) => {
                         const Icon = module.icon;
                         return (
-                            <Card key={module.id} className="group relative overflow-hidden hover:border-primary/40 transition-all duration-300 hover:aurora-glow">
-                                <div className="absolute inset-0 aurora-gradient opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                            <Card key={module.id} className="group relative overflow-hidden">
+                                {/* Animated gradient overlay on hover */}
+                                <div className="absolute inset-0 animated-gradient-subtle opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
                                 <CardHeader className="relative z-10">
                                     <div className="flex items-center gap-3">
-                                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-primary/20 to-aurora-violet/20 text-primary group-hover:from-primary/30 group-hover:to-aurora-violet/30 transition-all duration-300">
+                                        <div className="flex h-10 w-10 items-center justify-center rounded-lg glass-vision text-primary group-hover:neon-glow transition-all duration-300">
                                             <Icon className="h-5 w-5" />
                                         </div>
                                         <div>
-                                            <CardTitle className="text-lg group-hover:text-primary transition-colors">{module.name}</CardTitle>
+                                            <CardTitle className="text-lg group-hover:neon-text transition-all duration-300">{module.name}</CardTitle>
                                             {module.category && (
                                                 <span className="text-xs text-muted-foreground capitalize">
                                                     {module.category}
@@ -106,7 +102,7 @@ export default function DashboardPage() {
                                 </CardHeader>
                                 <CardContent className="space-y-4 relative z-10">
                                     <CardDescription>{module.description}</CardDescription>
-                                    <Button asChild variant="outline" className="w-full border-primary/30 group-hover:bg-gradient-to-r group-hover:from-primary group-hover:to-aurora-violet group-hover:text-primary-foreground group-hover:border-transparent transition-all duration-300">
+                                    <Button asChild variant="vision" className="w-full group-hover:animated-gradient group-hover:text-white transition-all duration-300">
                                         <Link href={module.route}>
                                             Ouvrir
                                             <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
@@ -118,16 +114,16 @@ export default function DashboardPage() {
                     })}
 
                     {/* Add Module Card */}
-                    <Card className="border-dashed border-white/10 flex flex-col items-center justify-center min-h-[200px] group hover:border-aurora-cyan/30 transition-colors">
+                    <Card className="border-dashed border-primary/10 flex flex-col items-center justify-center min-h-[200px] group hover:neon-border transition-all duration-300">
                         <CardContent className="text-center space-y-2 pt-6">
-                            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-muted/50 group-hover:bg-aurora-cyan/10 transition-colors">
-                                <Sparkles className="h-6 w-6 text-muted-foreground group-hover:text-aurora-cyan transition-colors" />
+                            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full glass-vision group-hover:neon-glow transition-all duration-300">
+                                <Sparkles className="h-6 w-6 text-muted-foreground group-hover:text-primary transition-colors" />
                             </div>
                             <CardTitle className="text-base">Nouveau module</CardTitle>
                             <CardDescription>
                                 Créez un nouveau module d&apos;expérimentation
                             </CardDescription>
-                            <Button variant="ghost" size="sm" disabled className="opacity-50">
+                            <Button variant="visionGhost" size="sm" disabled className="opacity-50">
                                 Bientôt disponible
                             </Button>
                         </CardContent>
