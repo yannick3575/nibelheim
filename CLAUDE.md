@@ -113,6 +113,33 @@ Uses pgvector for embeddings and RLS for data isolation.
 ## Conventions
 
 - Path alias: `@/*` maps to `./src/*`
-- Styling: Tailwind CSS v4 with shadcn/ui (New York style, zinc colors)
+- Styling: Tailwind CSS v4 with shadcn/ui (New York style, Vision UI neon colors)
 - Dark mode enabled by default
 - UI components use Radix UI primitives via shadcn/ui
+
+### Vision UI Design System
+The app uses a Vision UI-inspired design with neon glassmorphism effects:
+
+**Color Palette** (OKLCH):
+- Primary cyan: `oklch(0.72 0.24 210)` - Main accent color
+- Violet: `oklch(0.68 0.28 285)` - Secondary accent
+- Magenta: `oklch(0.70 0.30 320)` - Tertiary accent
+- Purple: `oklch(0.65 0.30 300)` - Background tints
+
+**Utility Classes** (`src/app/globals.css`):
+- `.glass-vision` / `.glass-vision-strong` - Glassmorphism with backdrop blur
+- `.neon-border` / `.neon-border-violet` / `.neon-border-magenta` - Neon border effects
+- `.neon-glow` / `.neon-glow-violet` / `.neon-glow-magenta` - Box shadow glow effects
+- `.neon-text` / `.neon-text-violet` - Text with glow
+- `.grid-pattern` / `.grid-pattern-dense` - Cyberpunk grid overlays
+- `.animated-gradient` / `.animated-gradient-subtle` - Animated color gradients
+- `.noise` - Noise texture overlay (use on elements with `relative` positioning)
+
+**Button Variants**:
+- `vision` - Glass button with neon border
+- `visionGradient` - Animated gradient button
+- `visionGhost` - Transparent with hover effects
+
+**Components** (`src/components/ui/`):
+- `vision-effects.tsx` - Reusable effect components (NoiseOverlay, GridPattern, GlassPanel, NeonBorderBox, NeonText)
+- `data-table-vision.tsx` - Glassmorphic data table component
