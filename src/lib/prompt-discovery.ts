@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from '@google/generativeai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import { createPrompt, getAllTags } from './prompt-library';
 import type { PromptCategory } from './prompt-library/types';
 import { logger } from './logger';
@@ -30,8 +30,6 @@ For each prompt found, you must provide:
 4. A set of relevant tags (use existing tags if provided).
 
 Return the results as a JSON array of objects with the following structure:
-\
-```json
 [
   {
     "title": "...",
@@ -40,8 +38,6 @@ Return the results as a JSON array of objects with the following structure:
     "tags": ["...", "..."]
   }
 ]
-\
-```
 
 Only return high-quality prompts. If the content contains many prompts, select the 5 most interesting ones.
 `;
@@ -81,15 +77,17 @@ Extract the prompts in JSON format.
     const result = await model.generateContent(prompt);
     const response = result.response;
     const text = response.text();
+    logger.log('Gemini Response Text:', text);
 
     // Extract JSON from markdown if present
-    const jsonMatch = text.match(/```json\n([\s\S]*?)\n```/) || text.match(/([\[\]])/);
+    const jsonMatch = text.match(/```json\n([\s\S]*?)\n```/) || text.match(/\[[\s\S]*?\]/);
     if (!jsonMatch) {
-      logger.error('[prompt-discovery] Failed to find JSON in Gemini response');
+      logger.error('[prompt-discovery] Failed to find JSON in Gemini response', text);
       return [];
     }
 
-    const rawJson = jsonMatch[0].includes('```json') ? jsonMatch[1] : jsonMatch[0];
+    const rawJson = jsonMatch[1] || jsonMatch[0];
+    logger.log('Raw JSON:', rawJson);
     const prompts = JSON.parse(rawJson);
 
     return prompts as Array<{
