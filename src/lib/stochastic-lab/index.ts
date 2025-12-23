@@ -5,6 +5,7 @@
 // ============================================
 
 import { createClient } from '@/lib/supabase/server';
+import { logger } from '@/lib/logger';
 import type {
   Conversation,
   CreateConversationInput,
@@ -39,7 +40,7 @@ export async function getConversations(): Promise<Conversation[]> {
     .order('updated_at', { ascending: false });
 
   if (error) {
-    console.error('Error fetching conversations:', error);
+    logger.error('[stochastic-lab] getConversations failed:', error);
     return [];
   }
 
@@ -60,7 +61,7 @@ export async function getConversation(id: string): Promise<Conversation | null> 
     .single();
 
   if (error) {
-    console.error('Error fetching conversation:', error);
+    logger.error('[stochastic-lab] getConversation failed:', error, { conversationId: id });
     return null;
   }
 
@@ -106,7 +107,7 @@ export async function createConversation(
     .single();
 
   if (error) {
-    console.error('Error creating conversation:', error);
+    logger.error('[stochastic-lab] createConversation failed:', error);
     return null;
   }
 
@@ -131,7 +132,7 @@ export async function updateConversation(
     .single();
 
   if (fetchError || !current) {
-    console.error('Error fetching conversation for update:', fetchError);
+    logger.error('[stochastic-lab] updateConversation - fetch failed:', fetchError, { conversationId: id });
     return null;
   }
 
@@ -152,7 +153,7 @@ export async function updateConversation(
     .single();
 
   if (error) {
-    console.error('Error updating conversation:', error);
+    logger.error('[stochastic-lab] updateConversation failed:', error, { conversationId: id });
     return null;
   }
 
@@ -172,7 +173,7 @@ export async function deleteConversation(id: string): Promise<boolean> {
     .eq('module_id', MODULE_ID);
 
   if (error) {
-    console.error('Error deleting conversation:', error);
+    logger.error('[stochastic-lab] deleteConversation failed:', error, { conversationId: id });
     return false;
   }
 

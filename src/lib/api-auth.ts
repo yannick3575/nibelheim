@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { createClient as createServerClient } from '@/lib/supabase/server';
 import { createClient } from '@supabase/supabase-js';
+import { logger } from '@/lib/logger';
 
 // ============================================
 // TYPES
@@ -108,7 +109,7 @@ export async function createApiToken(name: string, scopes: string[], expiresInDa
         .rpc('generate_api_token');
 
     if (tokenError || !tokenData) {
-        console.error('Error generating token:', tokenError);
+        logger.error('[api-auth] generateApiToken failed:', tokenError);
         return null;
     }
 
@@ -132,7 +133,7 @@ export async function createApiToken(name: string, scopes: string[], expiresInDa
         .single();
 
     if (error) {
-        console.error('Error creating API token:', error);
+        logger.error('[api-auth] createApiToken failed:', error, { name });
         return null;
     }
 
@@ -151,7 +152,7 @@ export async function listApiTokens(): Promise<Omit<ApiToken, 'token'>[]> {
         .order('created_at', { ascending: false });
 
     if (error) {
-        console.error('Error fetching API tokens:', error);
+        logger.error('[api-auth] listApiTokens failed:', error);
         return [];
     }
 
@@ -170,7 +171,7 @@ export async function revokeApiToken(tokenId: string): Promise<boolean> {
         .eq('id', tokenId);
 
     if (error) {
-        console.error('Error revoking API token:', error);
+        logger.error('[api-auth] revokeApiToken failed:', error, { tokenId });
         return false;
     }
 
@@ -229,7 +230,7 @@ export async function getAutomationLogs(limit = 100): Promise<AutomationLog[]> {
         .limit(limit);
 
     if (error) {
-        console.error('Error fetching automation logs:', error);
+        logger.error('[api-auth] getAutomationLogs failed:', error);
         return [];
     }
 

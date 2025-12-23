@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import { logger } from '@/lib/logger';
 import type { Prompt, CreatePromptInput, UpdatePromptInput, PromptFilters } from './types';
 
 // Re-export types and client-safe utilities
@@ -43,7 +44,7 @@ export async function getPrompts(filters?: PromptFilters): Promise<Prompt[]> {
   const { data, error } = await query;
 
   if (error) {
-    console.error('Error fetching prompts:', error);
+    logger.error('[prompt-library] getPrompts failed:', error);
     return [];
   }
 
@@ -63,7 +64,7 @@ export async function getPrompt(id: string): Promise<Prompt | null> {
     .single();
 
   if (error) {
-    console.error('Error fetching prompt:', error);
+    logger.error('[prompt-library] getPrompt failed:', error, { promptId: id });
     return null;
   }
 
@@ -98,7 +99,7 @@ export async function createPrompt(input: CreatePromptInput): Promise<Prompt | n
     .single();
 
   if (error) {
-    console.error('Error creating prompt:', error);
+    logger.error('[prompt-library] createPrompt failed:', error, { title: input.title, category: input.category });
     return null;
   }
 
@@ -130,7 +131,7 @@ export async function updatePrompt(id: string, updates: UpdatePromptInput): Prom
     .single();
 
   if (error) {
-    console.error('Error updating prompt:', error);
+    logger.error('[prompt-library] updatePrompt failed:', error, { promptId: id });
     return null;
   }
 
@@ -146,7 +147,7 @@ export async function deletePrompt(id: string): Promise<boolean> {
   const { error } = await supabase.from('prompt_library_prompts').delete().eq('id', id);
 
   if (error) {
-    console.error('Error deleting prompt:', error);
+    logger.error('[prompt-library] deletePrompt failed:', error, { promptId: id });
     return false;
   }
 
@@ -165,7 +166,7 @@ export async function togglePromptFavorite(id: string, is_favorite: boolean): Pr
     .eq('id', id);
 
   if (error) {
-    console.error('Error toggling favorite:', error);
+    logger.error('[prompt-library] toggleFavorite failed:', error, { promptId: id, is_favorite });
     return false;
   }
 
@@ -182,7 +183,7 @@ export async function getAllTags(): Promise<string[]> {
   const { data, error } = await supabase.from('prompt_library_prompts').select('tags');
 
   if (error || !data) {
-    console.error('Error fetching tags:', error);
+    logger.error('[prompt-library] getAllTags failed:', error);
     return [];
   }
 
