@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect } from "react";
+import * as Sentry from "@sentry/nextjs";
 import { Button } from "@/components/ui/button";
 import { AlertCircle, RefreshCw, ArrowLeft } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 
 export default function ModuleError({
   error,
@@ -13,10 +14,27 @@ export default function ModuleError({
   reset: () => void;
 }) {
   const router = useRouter();
+  const params = useParams();
+  const moduleId = params?.moduleId as string;
 
   useEffect(() => {
     console.error("[module-error]", error);
-  }, [error]);
+
+    // Report to Sentry with module context
+    Sentry.captureException(error, {
+      tags: {
+        component: "module-error-boundary",
+        moduleId: moduleId,
+        errorDigest: error.digest,
+      },
+      extra: {
+        digest: error.digest,
+        errorName: error.name,
+        errorMessage: error.message,
+        moduleId: moduleId,
+      },
+    });
+  }, [error, moduleId]);
 
   return (
     <div className="flex flex-1 items-center justify-center p-4">
