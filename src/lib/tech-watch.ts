@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import { logger } from '@/lib/logger';
 
 // ============================================
 // TYPES
@@ -61,7 +62,7 @@ export async function getLatestDigest(): Promise<DigestWithArticles | null> {
         .single();
 
     if (error || !digest) {
-        console.error('Error fetching latest digest:', error);
+        logger.error('[tech-watch] getLatestDigest failed:', error);
         return null;
     }
 
@@ -112,7 +113,7 @@ export async function getDigests(limit = 30): Promise<DigestMeta[]> {
         .limit(limit);
 
     if (error || !data) {
-        console.error('Error fetching digests:', error);
+        logger.error('[tech-watch] getDigests failed:', error);
         return [];
     }
 
@@ -144,7 +145,7 @@ export async function getArticlesByIds(ids: string[]): Promise<Article[]> {
         .order('collected_at', { ascending: false });
 
     if (error) {
-        console.error('Error fetching articles:', error);
+        logger.error('[tech-watch] getArticlesByIds failed:', error, { count: ids.length });
         return [];
     }
 
@@ -164,7 +165,7 @@ export async function getArticles(limit = 50, offset = 0): Promise<Article[]> {
         .range(offset, offset + limit - 1);
 
     if (error) {
-        console.error('Error fetching articles:', error);
+        logger.error('[tech-watch] getArticles failed:', error, { limit, offset });
         return [];
     }
 
@@ -184,7 +185,7 @@ export async function getArticle(id: string): Promise<Article | null> {
         .single();
 
     if (error) {
-        console.error('Error fetching article:', error);
+        logger.error('[tech-watch] getArticle failed:', error, { articleId: id });
         return null;
     }
 
@@ -203,7 +204,7 @@ export async function toggleArticleRead(id: string, read: boolean): Promise<bool
         .eq('id', id);
 
     if (error) {
-        console.error('Error updating article read status:', error);
+        logger.error('[tech-watch] toggleArticleRead failed:', error, { articleId: id, read });
         return false;
     }
 
@@ -222,7 +223,7 @@ export async function toggleArticleFavorite(id: string, is_favorite: boolean): P
         .eq('id', id);
 
     if (error) {
-        console.error('Error updating article favorite status:', error);
+        logger.error('[tech-watch] toggleArticleFavorite failed:', error, { articleId: id, is_favorite });
         return false;
     }
 
@@ -242,7 +243,7 @@ export async function getFavoriteArticles(): Promise<Article[]> {
         .order('collected_at', { ascending: false });
 
     if (error) {
-        console.error('Error fetching favorite articles:', error);
+        logger.error('[tech-watch] getFavoriteArticles failed:', error);
         return [];
     }
 
@@ -277,7 +278,7 @@ export async function getSources(): Promise<Source[]> {
         .order('created_at', { ascending: false });
 
     if (error) {
-        console.error('Error fetching sources:', error);
+        logger.error('[tech-watch] getSources failed:', error);
         return [];
     }
 
@@ -312,7 +313,7 @@ export async function createSource(source: {
         .single();
 
     if (error) {
-        console.error('Error creating source:', error);
+        logger.error('[tech-watch] createSource failed:', error, { name: source.name, type: source.type });
         return null;
     }
 
@@ -331,7 +332,7 @@ export async function updateSource(id: string, updates: Partial<Source>): Promis
         .eq('id', id);
 
     if (error) {
-        console.error('Error updating source:', error);
+        logger.error('[tech-watch] updateSource failed:', error, { sourceId: id });
         return false;
     }
 
@@ -350,7 +351,7 @@ export async function deleteSource(id: string): Promise<boolean> {
         .eq('id', id);
 
     if (error) {
-        console.error('Error deleting source:', error);
+        logger.error('[tech-watch] deleteSource failed:', error, { sourceId: id });
         return false;
     }
 

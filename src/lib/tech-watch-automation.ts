@@ -5,6 +5,7 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
+import { logger } from '@/lib/logger';
 import { Article, Source, Digest } from './tech-watch';
 
 // ============================================
@@ -79,7 +80,7 @@ export async function createArticle(
             return existing;
         }
 
-        console.error('Error creating article:', error);
+        logger.error('[tech-watch-automation] createArticle failed:', error, { url: input.url });
         return null;
     }
 
@@ -127,7 +128,7 @@ export async function getArticlesForUser(
     const { data, error } = await query;
 
     if (error) {
-        console.error('Error fetching articles:', error);
+        logger.error('[tech-watch-automation] getArticlesForUser failed:', error, { userId });
         return [];
     }
 
@@ -151,7 +152,7 @@ export async function updateArticle(
         .eq('user_id', userId);
 
     if (error) {
-        console.error('Error updating article:', error);
+        logger.error('[tech-watch-automation] updateArticle failed:', error, { userId, articleId });
         return false;
     }
 
@@ -205,7 +206,7 @@ export async function findOrCreateDigest(
         .single();
 
     if (error) {
-        console.error('Error creating digest:', error);
+        logger.error('[tech-watch-automation] findOrCreateDigest failed:', error, { userId, date });
         return null;
     }
 
@@ -238,7 +239,7 @@ export async function addArticleToDigest(
     // Find or create digest
     const digest = await findOrCreateDigest(userId, date);
     if (!digest) {
-        console.error('Failed to find or create digest for date:', date);
+        logger.error('[tech-watch-automation] addArticleToDigest - no digest:', { userId, date });
         return false;
     }
 
@@ -257,7 +258,7 @@ export async function addArticleToDigest(
         .eq('id', digest.id);
 
     if (error) {
-        console.error('Error adding article to digest:', error);
+        logger.error('[tech-watch-automation] addArticleToDigest failed:', error, { articleId, digestId: digest.id });
         return false;
     }
 
@@ -299,7 +300,7 @@ export async function createSourceForUser(
         .single();
 
     if (error) {
-        console.error('Error creating source:', error);
+        logger.error('[tech-watch-automation] createSourceForUser failed:', error, { userId, name: input.name });
         return null;
     }
 
@@ -319,7 +320,7 @@ export async function getSourcesForUser(userId: string): Promise<Source[]> {
         .order('created_at', { ascending: false });
 
     if (error) {
-        console.error('Error fetching sources:', error);
+        logger.error('[tech-watch-automation] getSourcesForUser failed:', error, { userId });
         return [];
     }
 
@@ -343,7 +344,7 @@ export async function updateSourceForUser(
         .eq('user_id', userId);
 
     if (error) {
-        console.error('Error updating source:', error);
+        logger.error('[tech-watch-automation] updateSourceForUser failed:', error, { userId, sourceId });
         return false;
     }
 
@@ -366,7 +367,7 @@ export async function deleteSourceForUser(
         .eq('user_id', userId);
 
     if (error) {
-        console.error('Error deleting source:', error);
+        logger.error('[tech-watch-automation] deleteSourceForUser failed:', error, { userId, sourceId });
         return false;
     }
 
