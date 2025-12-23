@@ -10,7 +10,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Star, Copy, Pencil, Trash2, Check, MoreVertical, Braces } from 'lucide-react';
+import { Star, Copy, Pencil, Trash2, Check, MoreVertical, Braces, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { extractVariables, CATEGORY_COLORS, type Prompt } from '@/lib/prompt-library/types';
 import { toast } from 'sonner';
@@ -86,7 +86,7 @@ export function PromptCard({ prompt, onDelete, onUpdate }: PromptCardProps) {
 
   return (
     <>
-      <Card className="group hover:border-primary/50 transition-colors">
+      <Card className={cn("group hover:border-primary/50 transition-colors", prompt.status === 'draft' && "border-orange-500/30 bg-orange-500/5 hover:border-orange-500/50")}>
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between gap-2">
             <div className="flex-1 min-w-0">
@@ -103,13 +103,24 @@ export function PromptCard({ prompt, onDelete, onUpdate }: PromptCardProps) {
                 >
                   {prompt.category}
                 </Badge>
-                {prompt.tags.slice(0, 3).map((tag) => (
+                {prompt.status === 'draft' && (
+                  <Badge variant="outline" className="text-xs bg-orange-500/10 text-orange-600 border-orange-500/20">
+                    Brouillon
+                  </Badge>
+                )}
+                {prompt.is_automated && (
+                  <Badge variant="outline" className="text-xs bg-indigo-500/10 text-indigo-600 border-indigo-500/20">
+                    <Sparkles className="h-3 w-3 mr-1" />
+                    Auto
+                  </Badge>
+                )}
+                {prompt.tags.slice(0, 2).map((tag) => (
                   <Badge key={tag} variant="secondary" className="text-xs">
                     {tag}
                   </Badge>
                 ))}
-                {prompt.tags.length > 3 && (
-                  <span className="text-xs text-muted-foreground">+{prompt.tags.length - 3}</span>
+                {prompt.tags.length > 2 && (
+                  <span className="text-xs text-muted-foreground">+{prompt.tags.length - 2}</span>
                 )}
               </CardDescription>
             </div>

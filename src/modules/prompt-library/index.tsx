@@ -4,18 +4,20 @@ import { useEffect, useState, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { BookText, Plus, Grid3x3, List, Star, Loader2 } from 'lucide-react';
+import { BookText, Plus, Grid3x3, List, Star, Loader2, Sparkles } from 'lucide-react';
 import { PromptCard } from './components/prompt-card';
 import { PromptListItem } from './components/prompt-list-item';
 import { CreatePromptDialog } from './components/create-prompt-dialog';
 import { FilterBar } from './components/filter-bar';
 import type { Prompt, PromptCategory } from '@/lib/prompt-library/types';
+import { toast } from 'sonner';
 
 type ViewMode = 'cards' | 'list';
 
 export default function PromptLibraryModule() {
   const [prompts, setPrompts] = useState<Prompt[]>([]);
   const [loading, setLoading] = useState(true);
+  const [discovering, setDiscovering] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // UI State
@@ -58,6 +60,31 @@ export default function PromptLibraryModule() {
     }
   }, [selectedCategory, showFavoritesOnly, debouncedSearch]);
 
+  // Handle discover
+  const handleDiscover = async () => {
+    setDiscovering(true);
+    try {
+      const response = await fetch('/api/prompt-library/discover', {
+        method: 'POST',
+      });
+      if (!response.ok) throw new Error('Failed to discover prompts');
+
+      const data = await response.json();
+      if (data.success && data.prompts.length > 0) {
+        toast.success(`${data.prompts.length} nouveaux prompts découverts !`);
+        // Refresh the list
+        fetchPrompts();
+      } else {
+        toast.info('Aucun nouveau prompt trouvé.');
+      }
+    } catch (err) {
+      console.error('Error discovering prompts:', err);
+      toast.error('Erreur lors de la découverte de prompts.');
+    } finally {
+      setDiscovering(false);
+    }
+  };
+
   useEffect(() => {
     fetchPrompts();
   }, [fetchPrompts]);
@@ -98,6 +125,19 @@ export default function PromptLibraryModule() {
           </div>
         </div>
         <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={handleDiscover}
+            disabled={discovering}
+            className="border-aurora-violet/30 hover:border-aurora-violet/50 hover:bg-aurora-violet/5"
+          >
+            {discovering ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Sparkles className="mr-2 h-4 w-4 text-aurora-violet" />
+            )}
+            Découvrir
+          </Button>
           <Button
             variant={viewMode === 'cards' ? 'default' : 'outline'}
             size="icon"
