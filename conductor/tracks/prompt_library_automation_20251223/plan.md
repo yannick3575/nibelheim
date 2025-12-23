@@ -1,24 +1,12 @@
 # Plan: Prompt Library Automated Discovery
 
 ## Phase 1: Foundation & Backend Logic
-- [ ] Task: Analysis - Review existing Prompt Library Schema and Tech Watch implementation
-    - [ ] Subtask: Analyze `supabase/migrations` to understand current `prompts` table.
-    - [ ] Subtask: Review `src/lib/tech-watch.ts` to understand how the scraping/search is currently implemented for Tech Watch.
-- [ ] Task: Database - Update Schema for Automated Prompts
-    - [ ] Subtask: Create a migration to add `source_url`, `is_automated`, and `status` (e.g., 'draft', 'published') fields to the `prompts` table.
-- [ ] Task: Backend - Implement Web Search & Extraction Service
-    - [ ] Subtask: Create `src/lib/prompt-discovery.ts`.
-    - [ ] Subtask: Implement function to search for prompt-related content (reusing or adapting patterns from Tech Watch).
-    - [ ] Subtask: Implement function to fetch page content.
-- [ ] Task: Backend - Implement AI Extraction & Classification
-    - [ ] Subtask: Define a Zod schema for the expected Prompt structure (title, content, tags, category).
-    - [ ] Subtask: Create a prompt for Gemini to extract and classify prompts from raw text.
-    - [ ] Subtask: Implement the extraction function in `src/lib/prompt-discovery.ts`.
-- [ ] Task: Backend - Create Discovery API Route
-    - [ ] Subtask: Create `src/app/api/prompt-library/discover/route.ts`.
-    - [ ] Subtask: Connect the discovery service to the API route.
-    - [ ] Subtask: Implement error handling and response formatting.
-- [ ] Task: Conductor - User Manual Verification 'Phase 1: Foundation & Backend Logic' (Protocol in workflow.md)
+- [x] Task: Analysis - Review existing Prompt Library Schema and Tech Watch implementation [ea81001]
+- [x] Task: Database - Update Schema for Automated Prompts [b14aaf3]
+- [x] Task: Backend - Implement Web Search & Extraction Service [cf632a1]
+- [x] Task: Backend - Implement AI Extraction & Classification [cf632a1]
+- [x] Task: Backend - Create Discovery API Route [cf632a1]
+- [x] Task: Conductor - User Manual Verification 'Phase 1: Foundation & Backend Logic' (Protocol in workflow.md) [checkpoint: ec6ae5f]
 
 ## Phase 2: Frontend Integration
 - [ ] Task: UI - Add Discovery Trigger
