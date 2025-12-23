@@ -90,6 +90,9 @@ export async function createPrompt(input: CreatePromptInput): Promise<Prompt | n
       category: input.category,
       tags: input.tags || [],
       is_favorite: input.is_favorite || false,
+      source_url: input.source_url,
+      is_automated: input.is_automated || false,
+      status: input.status || 'published',
     })
     .select()
     .single();
@@ -115,6 +118,9 @@ export async function updatePrompt(id: string, updates: UpdatePromptInput): Prom
   if (updates.category !== undefined) cleanUpdates.category = updates.category;
   if (updates.tags !== undefined) cleanUpdates.tags = updates.tags;
   if (updates.is_favorite !== undefined) cleanUpdates.is_favorite = updates.is_favorite;
+  if (updates.source_url !== undefined) cleanUpdates.source_url = updates.source_url;
+  if (updates.is_automated !== undefined) cleanUpdates.is_automated = updates.is_automated;
+  if (updates.status !== undefined) cleanUpdates.status = updates.status;
 
   const { data, error } = await supabase
     .from('prompt_library_prompts')

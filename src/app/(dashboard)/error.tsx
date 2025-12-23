@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import * as Sentry from "@sentry/nextjs";
 import { Button } from "@/components/ui/button";
 import { AlertCircle, RefreshCw, Home } from "lucide-react";
 
@@ -13,6 +14,19 @@ export default function DashboardError({
 }) {
   useEffect(() => {
     console.error("[dashboard-error]", error);
+
+    // Report to Sentry with context
+    Sentry.captureException(error, {
+      tags: {
+        component: "dashboard-error-boundary",
+        errorDigest: error.digest,
+      },
+      extra: {
+        digest: error.digest,
+        errorName: error.name,
+        errorMessage: error.message,
+      },
+    });
   }, [error]);
 
   return (

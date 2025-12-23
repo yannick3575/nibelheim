@@ -38,6 +38,8 @@ describe('PromptCard', () => {
     category: 'coding',
     tags: ['test', 'example', 'demo'],
     is_favorite: false,
+    is_automated: false,
+    status: 'published',
     created_at: '2024-01-01T00:00:00Z',
     updated_at: '2024-01-01T00:00:00Z',
   };
@@ -75,20 +77,31 @@ describe('PromptCard', () => {
     expect(screen.getByText('coding')).toBeInTheDocument();
   });
 
-  it('should render tags (up to 3)', () => {
+  it('should render tags (up to 2)', () => {
     render(<PromptCard {...defaultProps} />);
     expect(screen.getByText('test')).toBeInTheDocument();
     expect(screen.getByText('example')).toBeInTheDocument();
-    expect(screen.getByText('demo')).toBeInTheDocument();
+    expect(screen.queryByText('demo')).not.toBeInTheDocument();
+    expect(screen.getByText('+1')).toBeInTheDocument();
   });
 
-  it('should show +N when more than 3 tags', () => {
+  it('should show +N when more than 2 tags', () => {
     const promptWithManyTags = {
       ...mockPrompt,
       tags: ['tag1', 'tag2', 'tag3', 'tag4', 'tag5'],
     };
     render(<PromptCard {...defaultProps} prompt={promptWithManyTags} />);
-    expect(screen.getByText('+2')).toBeInTheDocument();
+    expect(screen.getByText('+3')).toBeInTheDocument();
+  });
+
+  it('should show "Brouillon" badge when status is draft', () => {
+    render(<PromptCard {...defaultProps} prompt={{ ...mockPrompt, status: 'draft' }} />);
+    expect(screen.getByText(/brouillon/i)).toBeInTheDocument();
+  });
+
+  it('should show "Auto" badge when automated', () => {
+    render(<PromptCard {...defaultProps} prompt={{ ...mockPrompt, is_automated: true }} />);
+    expect(screen.getByText(/auto/i)).toBeInTheDocument();
   });
 
   it('should show copy button for prompt without variables', () => {

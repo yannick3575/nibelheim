@@ -9,7 +9,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Star, Copy, Pencil, Trash2, Check, MoreVertical, Braces } from 'lucide-react';
+import { Star, Copy, Pencil, Trash2, Check, MoreVertical, Braces, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { extractVariables, CATEGORY_COLORS, type Prompt } from '@/lib/prompt-library/types';
 import { toast } from 'sonner';
@@ -85,7 +85,7 @@ export function PromptListItem({ prompt, onDelete, onUpdate }: PromptListItemPro
 
   return (
     <>
-      <div className="flex items-center gap-4 p-4 border rounded-lg hover:border-primary/50 transition-colors">
+      <div className={cn("flex items-center gap-4 p-4 border rounded-lg hover:border-primary/50 transition-colors", prompt.status === 'draft' && "border-orange-500/30 bg-orange-500/5 hover:border-orange-500/50")}>
         {/* Favorite */}
         <Button
           variant="ghost"
@@ -101,6 +101,17 @@ export function PromptListItem({ prompt, onDelete, onUpdate }: PromptListItemPro
           <div className="flex items-center gap-2">
             <span className="font-medium truncate">{prompt.title}</span>
             {hasVariables && <Braces className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />}
+            {prompt.status === 'draft' && (
+              <Badge variant="outline" className="text-[10px] h-4 py-0 bg-orange-500/10 text-orange-600 border-orange-500/20">
+                Brouillon
+              </Badge>
+            )}
+            {prompt.is_automated && (
+              <Badge variant="outline" className="text-[10px] h-4 py-0 bg-indigo-500/10 text-indigo-600 border-indigo-500/20">
+                <Sparkles className="h-2.5 w-2.5 mr-0.5" />
+                Auto
+              </Badge>
+            )}
           </div>
           <div className="flex items-center gap-1.5 mt-1">
             <Badge
