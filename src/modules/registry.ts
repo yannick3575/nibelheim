@@ -1,10 +1,11 @@
 import { lazy } from 'react';
-import { Rss, FlaskConical, BookText } from 'lucide-react';
+import { Rss, FlaskConical, BookText, Activity } from 'lucide-react';
 import { ModuleConfig, ModuleRegistry } from '@/types/modules';
 
 // Lazy load module components
 const TechWatchModule = lazy(() => import('./tech-watch'));
 const PromptLibraryModule = lazy(() => import('./prompt-library'));
+const StochasticLabModule = lazy(() => import('./stochastic-lab'));
 const TemplateModule = lazy(() => import('./_template'));
 
 // Module definitions
@@ -30,6 +31,17 @@ const modules: ModuleConfig[] = [
         component: PromptLibraryModule,
         category: 'ai',
         tags: ['prompts', 'templates', 'productivity'],
+    },
+    {
+        id: 'stochastic-lab',
+        name: 'Stochastic Lab',
+        description: 'Simulations probabilistes avec agent IA : Monte-Carlo, Markov, Marches Aléatoires',
+        icon: Activity,
+        route: '/stochastic-lab',
+        enabled: true,
+        component: StochasticLabModule,
+        category: 'ai',
+        tags: ['ai', 'statistics', 'probability', 'simulation', 'monte-carlo', 'markov'],
     },
     // Template module - disabled by default, for development reference
     {
