@@ -20,6 +20,8 @@ export const CATEGORY_COLORS: Record<PromptCategory, string> = {
   other: 'bg-zinc-500/10 text-zinc-500 border-zinc-500/20',
 };
 
+export type PromptStatus = 'draft' | 'published' | 'archived';
+
 export interface Prompt {
   id: string;
   user_id: string;
@@ -28,6 +30,9 @@ export interface Prompt {
   category: PromptCategory;
   tags: string[];
   is_favorite: boolean;
+  source_url?: string;
+  is_automated: boolean;
+  status: PromptStatus;
   created_at: string;
   updated_at: string;
 }
@@ -38,6 +43,9 @@ export interface CreatePromptInput {
   category: PromptCategory;
   tags?: string[];
   is_favorite?: boolean;
+  source_url?: string;
+  is_automated?: boolean;
+  status?: PromptStatus;
 }
 
 export interface UpdatePromptInput {
@@ -46,6 +54,9 @@ export interface UpdatePromptInput {
   category?: PromptCategory;
   tags?: string[];
   is_favorite?: boolean;
+  source_url?: string;
+  is_automated?: boolean;
+  status?: PromptStatus;
 }
 
 export interface PromptFilters {
