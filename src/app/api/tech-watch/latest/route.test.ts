@@ -24,10 +24,14 @@ describe('GET /api/tech-watch/latest', () => {
   it('should return latest digest when found', async () => {
     const mockDigest = {
       id: 'digest-1',
-      date: '2024-01-15',
+      user_id: 'user-123',
+      period_start: '2024-01-15T00:00:00',
+      period_end: '2024-01-15T23:59:59',
       summary: 'Tech news summary',
+      key_topics: ['AI', 'Security'],
       article_ids: ['article-1', 'article-2'],
       created_at: '2024-01-15T10:00:00Z',
+      articles: [],
     };
 
     vi.mocked(getLatestDigest).mockResolvedValue(mockDigest);

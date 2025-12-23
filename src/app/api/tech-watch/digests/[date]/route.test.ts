@@ -33,10 +33,14 @@ describe('GET /api/tech-watch/digests/[date]', () => {
   it('should return digest for valid date', async () => {
     const mockDigest = {
       id: 'digest-1',
-      date: '2024-01-15',
+      user_id: 'user-123',
+      period_start: '2024-01-15T00:00:00',
+      period_end: '2024-01-15T23:59:59',
       summary: 'Tech news for the day',
+      key_topics: ['AI', 'Security'],
       article_ids: ['article-1', 'article-2'],
       created_at: '2024-01-15T10:00:00Z',
+      articles: [],
     };
 
     vi.mocked(getDigestByDate).mockResolvedValue(mockDigest);

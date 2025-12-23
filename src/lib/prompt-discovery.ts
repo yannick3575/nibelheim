@@ -77,18 +77,30 @@ Extract the prompts in JSON format.
     const result = await model.generateContent(prompt);
     const response = result.response;
     const text = response.text();
-    logger.log('Gemini Response Text:', text);
+    logger.info('[prompt-discovery] Gemini response received, length:', text.length);
 
-    // Extract JSON from markdown if present
-    const jsonMatch = text.match(/```json\n([\s\S]*?)\n```/) || text.match(/\[[\s\S]*?\]/);
+    // Extract JSON from markdown if present (try multiple patterns)
+    let jsonMatch = text.match(/```json\s*([\s\S]*?)\s*```/);
     if (!jsonMatch) {
-      logger.error('[prompt-discovery] Failed to find JSON in Gemini response', text);
+      // Try to find a JSON array directly (greedy to get the full array)
+      jsonMatch = text.match(/\[\s*\{[\s\S]*\}\s*\]/);
+    }
+
+    if (!jsonMatch) {
+      logger.error('[prompt-discovery] Failed to find JSON in Gemini response. Response preview:', text.substring(0, 500));
       return [];
     }
 
     const rawJson = jsonMatch[1] || jsonMatch[0];
-    logger.log('Raw JSON:', rawJson);
-    const prompts = JSON.parse(rawJson);
+    logger.info('[prompt-discovery] Extracted JSON, length:', rawJson.length);
+
+    let prompts;
+    try {
+      prompts = JSON.parse(rawJson);
+    } catch (parseError) {
+      logger.error('[prompt-discovery] JSON parse error:', parseError, 'Raw JSON preview:', rawJson.substring(0, 300));
+      return [];
+    }
 
     return prompts as Array<{
       title: string;
@@ -125,16 +137,25 @@ export async function discoverFromUrl(url: string, existingTags: string[] = []) 
  * Main discovery function
  */
 export async function discoverAndSavePrompts(userId: string) {
+  logger.info(`[prompt-discovery] Starting discovery for user ${userId}`);
+
   const existingTags = await getAllTags();
+  logger.info(`[prompt-discovery] Found ${existingTags.length} existing tags`);
+
   const allDiscoveredPrompts = [];
 
   for (const url of DISCOVERY_SOURCES) {
+    logger.info(`[prompt-discovery] Processing source: ${url}`);
     const prompts = await discoverFromUrl(url, existingTags);
+    logger.info(`[prompt-discovery] Extracted ${prompts.length} prompts from ${url}`);
     allDiscoveredPrompts.push(...prompts.map(p => ({ ...p, source_url: url })));
   }
 
+  logger.info(`[prompt-discovery] Total prompts to save: ${allDiscoveredPrompts.length}`);
+
   const savedPrompts = [];
   for (const p of allDiscoveredPrompts) {
+    logger.info(`[prompt-discovery] Saving prompt: "${p.title}" (${p.category})`);
     // We save them as 'draft' for review
     const saved = await createPrompt({
       title: p.title,
@@ -145,8 +166,14 @@ export async function discoverAndSavePrompts(userId: string) {
       is_automated: true,
       status: 'draft',
     });
-    if (saved) savedPrompts.push(saved);
+    if (saved) {
+      logger.info(`[prompt-discovery] Saved prompt: ${saved.id}`);
+      savedPrompts.push(saved);
+    } else {
+      logger.error(`[prompt-discovery] Failed to save prompt: "${p.title}"`);
+    }
   }
 
+  logger.info(`[prompt-discovery] Discovery complete. Saved ${savedPrompts.length}/${allDiscoveredPrompts.length} prompts`);
   return savedPrompts;
 }

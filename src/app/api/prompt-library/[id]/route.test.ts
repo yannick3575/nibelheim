@@ -24,9 +24,11 @@ const mockPrompt = {
   user_id: 'user-123',
   title: 'Test Prompt',
   content: 'Hello {{name}}!',
-  category: 'coding',
+  category: 'coding' as const,
   tags: ['test', 'example'],
   is_favorite: false,
+  is_automated: false,
+  status: 'published' as const,
   created_at: '2024-01-01T00:00:00Z',
   updated_at: '2024-01-01T00:00:00Z',
 };
@@ -130,7 +132,7 @@ describe('PATCH /api/prompt-library/[id]', () => {
   });
 
   it('should update multiple fields', async () => {
-    const updatedPrompt = { ...mockPrompt, title: 'New', category: 'writing' };
+    const updatedPrompt = { ...mockPrompt, title: 'New', category: 'writing' as const };
     vi.mocked(updatePrompt).mockResolvedValue(updatedPrompt);
 
     const request = new NextRequest('http://localhost:3000/api/prompt-library/test-id-123', {

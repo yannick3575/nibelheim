@@ -23,9 +23,11 @@ const mockPrompt = {
   user_id: 'user-123',
   title: 'Test Prompt',
   content: 'Hello {{name}}!',
-  category: 'coding',
+  category: 'coding' as const,
   tags: ['test', 'example'],
   is_favorite: false,
+  is_automated: false,
+  status: 'published' as const,
   created_at: '2024-01-01T00:00:00Z',
   updated_at: '2024-01-01T00:00:00Z',
 };
@@ -249,7 +251,7 @@ describe('POST /api/prompt-library', () => {
   });
 
   it('should accept valid categories', async () => {
-    const categories = ['coding', 'writing', 'analysis', 'creative', 'other'];
+    const categories = ['coding', 'writing', 'analysis', 'creative', 'other'] as const;
 
     for (const category of categories) {
       vi.mocked(createPrompt).mockResolvedValue({ ...mockPrompt, category });

@@ -39,12 +39,17 @@ describe('/api/tech-watch/articles/[id]', () => {
     it('should return article when found', async () => {
       const mockArticle = {
         id: 'article-1',
+        user_id: 'user-123',
         title: 'Test Article',
         url: 'https://example.com/article',
+        source: 'Hacker News',
+        content: 'Full article content',
         summary: 'Article summary',
-        source_id: 'source-1',
+        tags: ['tech', 'news'],
+        published_at: '2024-01-15T09:00:00Z',
+        collected_at: '2024-01-15T10:00:00Z',
         read: false,
-        created_at: '2024-01-15T10:00:00Z',
+        is_favorite: false,
       };
 
       vi.mocked(getArticle).mockResolvedValue(mockArticle);

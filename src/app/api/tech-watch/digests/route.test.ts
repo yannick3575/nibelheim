@@ -26,16 +26,12 @@ describe('GET /api/tech-watch/digests', () => {
       {
         id: 'digest-1',
         date: '2024-01-15',
-        summary: 'Day 1 summary',
-        article_ids: ['a1', 'a2'],
-        created_at: '2024-01-15T10:00:00Z',
+        article_count: 2,
       },
       {
         id: 'digest-2',
         date: '2024-01-14',
-        summary: 'Day 2 summary',
-        article_ids: ['a3'],
-        created_at: '2024-01-14T10:00:00Z',
+        article_count: 1,
       },
     ];
 

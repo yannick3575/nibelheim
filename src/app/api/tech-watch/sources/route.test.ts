@@ -28,18 +28,24 @@ describe('/api/tech-watch/sources', () => {
       const mockSources = [
         {
           id: 'source-1',
+          user_id: 'user-123',
           type: 'rss' as const,
           name: 'Hacker News',
           url: 'https://news.ycombinator.com/rss',
+          config: {},
           enabled: true,
+          last_fetched_at: null,
           created_at: '2024-01-01T00:00:00Z',
         },
         {
           id: 'source-2',
+          user_id: 'user-123',
           type: 'api' as const,
           name: 'Reddit API',
           url: 'https://api.reddit.com',
+          config: {},
           enabled: false,
+          last_fetched_at: null,
           created_at: '2024-01-02T00:00:00Z',
         },
       ];
@@ -86,10 +92,13 @@ describe('/api/tech-watch/sources', () => {
     it('should create a source with valid data', async () => {
       const mockSource = {
         id: 'new-source-1',
+        user_id: 'user-123',
         type: 'rss' as const,
         name: 'Tech Crunch',
         url: 'https://techcrunch.com/feed/',
+        config: {},
         enabled: true,
+        last_fetched_at: null,
         created_at: '2024-01-15T10:00:00Z',
       };
 
@@ -117,10 +126,13 @@ describe('/api/tech-watch/sources', () => {
     it('should create a source without URL', async () => {
       const mockSource = {
         id: 'new-source-2',
+        user_id: 'user-123',
         type: 'manual' as const,
         name: 'Manual Source',
         url: null,
+        config: {},
         enabled: true,
+        last_fetched_at: null,
         created_at: '2024-01-15T10:00:00Z',
       };
 
