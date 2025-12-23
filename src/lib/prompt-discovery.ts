@@ -7,7 +7,7 @@ import { logger } from './logger';
 // CONFIGURATION
 // ============================================ 
 
-const GEMINI_MODEL = 'gemini-2.0-flash';
+const GEMINI_MODEL = 'gemini-3-flash-preview';
 
 // Target URLs for discovery (Initial set)
 const DISCOVERY_SOURCES = [
