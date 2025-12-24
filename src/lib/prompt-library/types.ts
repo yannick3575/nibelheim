@@ -64,7 +64,70 @@ export interface PromptFilters {
   tags?: string[];
   favorites?: boolean;
   search?: string;
+  status?: PromptStatus | 'all';
 }
+
+// ============================================
+// DISCOVERY SOURCE TYPES
+// ============================================
+
+export type DiscoverySourceType = 'github_raw' | 'github_api' | 'web' | 'rss';
+
+export type DiscoverySourceCategory =
+  | 'general'
+  | 'coding'
+  | 'writing'
+  | 'creative'
+  | 'analysis'
+  | 'system_prompts'
+  | 'other';
+
+export interface DiscoverySource {
+  id: string;
+  name: string;
+  description: string | null;
+  url: string;
+  source_type: DiscoverySourceType;
+  category: DiscoverySourceCategory;
+  is_enabled: boolean;
+  priority: number;
+  last_fetched_at: string | null;
+  last_error: string | null;
+  fetch_count: number;
+  prompts_extracted: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateDiscoverySourceInput {
+  name: string;
+  description?: string;
+  url: string;
+  source_type?: DiscoverySourceType;
+  category?: DiscoverySourceCategory;
+  is_enabled?: boolean;
+  priority?: number;
+}
+
+export interface UpdateDiscoverySourceInput {
+  name?: string;
+  description?: string;
+  url?: string;
+  source_type?: DiscoverySourceType;
+  category?: DiscoverySourceCategory;
+  is_enabled?: boolean;
+  priority?: number;
+}
+
+export const DISCOVERY_SOURCE_CATEGORIES: { value: DiscoverySourceCategory; label: string }[] = [
+  { value: 'general', label: 'General' },
+  { value: 'coding', label: 'Coding' },
+  { value: 'writing', label: 'Writing' },
+  { value: 'creative', label: 'Creative' },
+  { value: 'analysis', label: 'Analysis' },
+  { value: 'system_prompts', label: 'System Prompts' },
+  { value: 'other', label: 'Other' },
+];
 
 // ============================================
 // VARIABLE UTILITIES (Client-safe)
