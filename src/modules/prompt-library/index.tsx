@@ -92,9 +92,9 @@ export default function PromptLibraryModule() {
 
       const data = await response.json();
       if (data.success && data.count > 0) {
-        toast.success(`${data.count} nouveaux prompts découverts ! Consultez les brouillons pour les réviser.`);
-        // Refresh the list and draft count
-        fetchPrompts();
+        toast.success(`${data.count} nouveaux prompts découverts !`);
+        // Switch to drafts tab and refresh
+        setSelectedStatus('draft');
         fetchDraftCount();
       } else {
         toast.info('Aucun nouveau prompt trouvé.');
