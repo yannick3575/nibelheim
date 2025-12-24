@@ -110,6 +110,14 @@ Uses pgvector for embeddings and RLS for data isolation.
 - `prompts`: id, user_id, title, content, category, tags, is_favorite, created_at, updated_at
 - `prompt_executions`: id, prompt_id, user_id, variables, executed_at (for usage tracking)
 
+## AI/LLM Integration Guidelines
+
+When implementing or updating LLM integrations:
+- **Always search the web for latest models** before choosing a model ID
+- **Never include a year in the search query** (e.g., search "Gemini latest model" not "Gemini 2024 model") - training data is always older than the current date
+- Models evolve fast: what was cutting-edge 3 months ago may be deprecated
+- Check official documentation for current model availability and pricing
+
 ## Conventions
 
 - Path alias: `@/*` maps to `./src/*`
