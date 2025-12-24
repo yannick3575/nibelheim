@@ -41,6 +41,16 @@ export async function getPrompts(filters?: PromptFilters): Promise<Prompt[]> {
     });
   }
 
+  // Status filter (default to 'published' if not specified)
+  if (filters?.status === 'all') {
+    // No filter - show all statuses
+  } else if (filters?.status) {
+    query = query.eq('status', filters.status);
+  } else {
+    // Default: only show published prompts
+    query = query.eq('status', 'published');
+  }
+
   const { data, error } = await query;
 
   if (error) {

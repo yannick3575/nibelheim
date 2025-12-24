@@ -1,26 +1,22 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { createPrompt, getAllTags } from './prompt-library';
-import type { PromptCategory } from './prompt-library/types';
+import type { PromptCategory, DiscoverySource } from './prompt-library/types';
 import { logger } from './logger';
 
-// ============================================ 
+// ============================================
 // CONFIGURATION
-// ============================================ 
+// ============================================
 
 const GEMINI_MODEL = 'gemini-3-flash-preview';
 
-// Target URLs for discovery (Initial set)
-const DISCOVERY_SOURCES = [
-  'https://raw.githubusercontent.com/f/awesome-chatgpt-prompts/main/prompts.csv',
-  'https://raw.githubusercontent.com/f/awesome-chatgpt-prompts/main/README.md',
-];
-
-// ============================================ 
+// ============================================
 // AI PROMPT
-// ============================================ 
+// ============================================
 
 const EXTRACTION_SYSTEM_PROMPT = `
-You are an expert prompt engineer and data extractor. 
+You are an expert prompt engineer and data extractor.
 Your task is to analyze the provided content and extract high-quality AI prompts.
 
 For each prompt found, you must provide:
@@ -42,9 +38,191 @@ Return the results as a JSON array of objects with the following structure:
 Only return high-quality prompts. If the content contains many prompts, select the 5 most interesting ones.
 `;
 
-// ============================================ 
-// FUNCTIONS
-// ============================================ 
+// ============================================
+// DISCOVERY SOURCE MANAGEMENT
+// ============================================
+
+/**
+ * Get all enabled discovery sources, ordered by priority
+ */
+export async function getDiscoverySources(): Promise<DiscoverySource[]> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('prompt_discovery_sources')
+    .select('*')
+    .eq('is_enabled', true)
+    .order('priority', { ascending: false });
+
+  if (error) {
+    logger.error('[prompt-discovery] Failed to fetch sources:', error);
+    return [];
+  }
+
+  return data || [];
+}
+
+/**
+ * Get all discovery sources (including disabled)
+ */
+export async function getAllDiscoverySources(): Promise<DiscoverySource[]> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('prompt_discovery_sources')
+    .select('*')
+    .order('priority', { ascending: false });
+
+  if (error) {
+    logger.error('[prompt-discovery] Failed to fetch all sources:', error);
+    return [];
+  }
+
+  return data || [];
+}
+
+/**
+ * Get a single discovery source by ID
+ */
+export async function getDiscoverySource(id: string): Promise<DiscoverySource | null> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('prompt_discovery_sources')
+    .select('*')
+    .eq('id', id)
+    .single();
+
+  if (error) {
+    logger.error('[prompt-discovery] Failed to fetch source:', error, { sourceId: id });
+    return null;
+  }
+
+  return data;
+}
+
+/**
+ * Create a new discovery source
+ * Uses admin client to bypass RLS (sources are admin-managed)
+ */
+export async function createDiscoverySource(input: {
+  name: string;
+  description?: string;
+  url: string;
+  source_type?: string;
+  category?: string;
+  priority?: number;
+}): Promise<DiscoverySource | null> {
+  const supabase = createAdminClient();
+
+  const { data, error } = await supabase
+    .from('prompt_discovery_sources')
+    .insert({
+      name: input.name,
+      description: input.description,
+      url: input.url,
+      source_type: input.source_type || 'github_raw',
+      category: input.category || 'general',
+      priority: input.priority || 0,
+    })
+    .select()
+    .single();
+
+  if (error) {
+    logger.error('[prompt-discovery] Failed to create source:', error, { name: input.name });
+    return null;
+  }
+
+  return data;
+}
+
+/**
+ * Update a discovery source
+ * Uses admin client to bypass RLS (sources are admin-managed)
+ */
+export async function updateDiscoverySource(
+  id: string,
+  updates: Partial<{
+    name: string;
+    description: string;
+    url: string;
+    source_type: string;
+    category: string;
+    is_enabled: boolean;
+    priority: number;
+  }>
+): Promise<DiscoverySource | null> {
+  const supabase = createAdminClient();
+
+  const { data, error } = await supabase
+    .from('prompt_discovery_sources')
+    .update(updates)
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) {
+    logger.error('[prompt-discovery] Failed to update source:', error, { sourceId: id });
+    return null;
+  }
+
+  return data;
+}
+
+/**
+ * Delete a discovery source
+ * Uses admin client to bypass RLS (sources are admin-managed)
+ */
+export async function deleteDiscoverySource(id: string): Promise<boolean> {
+  const supabase = createAdminClient();
+
+  const { error } = await supabase
+    .from('prompt_discovery_sources')
+    .delete()
+    .eq('id', id);
+
+  if (error) {
+    logger.error('[prompt-discovery] Failed to delete source:', error, { sourceId: id });
+    return false;
+  }
+
+  return true;
+}
+
+/**
+ * Update source statistics after a fetch
+ * Uses admin client to bypass RLS (sources are admin-managed)
+ */
+async function updateSourceStats(
+  sourceId: string,
+  success: boolean,
+  promptsExtracted: number,
+  errorMessage?: string
+): Promise<void> {
+  const supabase = createAdminClient();
+
+  const updateData: Record<string, unknown> = {
+    last_fetched_at: new Date().toISOString(),
+    last_error: success ? null : (errorMessage || 'Unknown error'),
+  };
+
+  if (success && promptsExtracted > 0) {
+    updateData.prompts_extracted = promptsExtracted;
+  }
+
+  const { error } = await supabase
+    .from('prompt_discovery_sources')
+    .update(updateData)
+    .eq('id', sourceId);
+
+  if (error) {
+    logger.error('[prompt-discovery] Failed to update source stats:', error, { sourceId });
+  }
+}
+
+// ============================================
+// AI EXTRACTION FUNCTIONS
+// ============================================
 
 function getGeminiClient(): GoogleGenerativeAI {
   const apiKey = process.env.GEMINI_API_KEY;
@@ -62,14 +240,14 @@ export async function extractPromptsFromContent(content: string, existingTags: s
     const genAI = getGeminiClient();
     const model = genAI.getGenerativeModel({
       model: GEMINI_MODEL,
-      systemInstruction: EXTRACTION_SYSTEM_PROMPT 
+      systemInstruction: EXTRACTION_SYSTEM_PROMPT,
     });
 
     const prompt = `
 Context: Here are some existing tags in the library: ${existingTags.join(', ')}
 Content to analyze:
 ---
-${content.substring(0, 30000)} 
+${content.substring(0, 30000)}
 ---
 Extract the prompts in JSON format.
 `;
@@ -87,7 +265,10 @@ Extract the prompts in JSON format.
     }
 
     if (!jsonMatch) {
-      logger.error('[prompt-discovery] Failed to find JSON in Gemini response. Response preview:', text.substring(0, 500));
+      logger.error(
+        '[prompt-discovery] Failed to find JSON in Gemini response. Response preview:',
+        text.substring(0, 500)
+      );
       return [];
     }
 
@@ -98,7 +279,12 @@ Extract the prompts in JSON format.
     try {
       prompts = JSON.parse(rawJson);
     } catch (parseError) {
-      logger.error('[prompt-discovery] JSON parse error:', parseError, 'Raw JSON preview:', rawJson.substring(0, 300));
+      logger.error(
+        '[prompt-discovery] JSON parse error:',
+        parseError,
+        'Raw JSON preview:',
+        rawJson.substring(0, 300)
+      );
       return [];
     }
 
@@ -122,10 +308,10 @@ export async function discoverFromUrl(url: string, existingTags: string[] = []) 
     logger.info(`[prompt-discovery] Fetching from ${url}`);
     const response = await fetch(url);
     if (!response.ok) {
-        throw new Error(`Failed to fetch ${url}: ${response.statusText}`);
+      throw new Error(`Failed to fetch ${url}: ${response.statusText}`);
     }
     const content = await response.text();
-    
+
     return await extractPromptsFromContent(content, existingTags);
   } catch (error) {
     logger.error(`[prompt-discovery] Error discovering from ${url}:`, error);
@@ -134,29 +320,97 @@ export async function discoverFromUrl(url: string, existingTags: string[] = []) 
 }
 
 /**
- * Main discovery function
+ * Discover prompts from a single source
  */
-export async function discoverAndSavePrompts(userId: string) {
+export async function discoverFromSource(
+  source: DiscoverySource,
+  existingTags: string[] = []
+): Promise<{
+  prompts: Array<{
+    title: string;
+    content: string;
+    category: PromptCategory;
+    tags: string[];
+    source_url: string;
+    source_name: string;
+  }>;
+  error?: string;
+}> {
+  try {
+    logger.info(`[prompt-discovery] Processing source: ${source.name} (${source.url})`);
+    const prompts = await discoverFromUrl(source.url, existingTags);
+
+    // Update stats
+    await updateSourceStats(source.id, true, prompts.length);
+
+    return {
+      prompts: prompts.map((p) => ({
+        ...p,
+        source_url: source.url,
+        source_name: source.name,
+      })),
+    };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    await updateSourceStats(source.id, false, 0, errorMessage);
+    logger.error(`[prompt-discovery] Error with source ${source.name}:`, error);
+    return { prompts: [], error: errorMessage };
+  }
+}
+
+/**
+ * Main discovery function - discovers from all enabled sources
+ */
+export async function discoverAndSavePrompts(userId: string, sourceIds?: string[]) {
   logger.info(`[prompt-discovery] Starting discovery for user ${userId}`);
+
+  // Get sources (all enabled or specific ones)
+  let sources: DiscoverySource[];
+  if (sourceIds && sourceIds.length > 0) {
+    const allSources = await getAllDiscoverySources();
+    sources = allSources.filter((s) => sourceIds.includes(s.id));
+  } else {
+    sources = await getDiscoverySources();
+  }
+
+  if (sources.length === 0) {
+    logger.warn('[prompt-discovery] No sources found to process');
+    return { savedPrompts: [], errors: [] };
+  }
+
+  logger.info(`[prompt-discovery] Found ${sources.length} sources to process`);
 
   const existingTags = await getAllTags();
   logger.info(`[prompt-discovery] Found ${existingTags.length} existing tags`);
 
-  const allDiscoveredPrompts = [];
+  const allDiscoveredPrompts: Array<{
+    title: string;
+    content: string;
+    category: PromptCategory;
+    tags: string[];
+    source_url: string;
+    source_name: string;
+  }> = [];
+  const errors: Array<{ source: string; error: string }> = [];
 
-  for (const url of DISCOVERY_SOURCES) {
-    logger.info(`[prompt-discovery] Processing source: ${url}`);
-    const prompts = await discoverFromUrl(url, existingTags);
-    logger.info(`[prompt-discovery] Extracted ${prompts.length} prompts from ${url}`);
-    allDiscoveredPrompts.push(...prompts.map(p => ({ ...p, source_url: url })));
+  // Process each source
+  for (const source of sources) {
+    const result = await discoverFromSource(source, existingTags);
+    if (result.error) {
+      errors.push({ source: source.name, error: result.error });
+    }
+    allDiscoveredPrompts.push(...result.prompts);
+    logger.info(
+      `[prompt-discovery] Extracted ${result.prompts.length} prompts from ${source.name}`
+    );
   }
 
   logger.info(`[prompt-discovery] Total prompts to save: ${allDiscoveredPrompts.length}`);
 
+  // Save prompts
   const savedPrompts = [];
   for (const p of allDiscoveredPrompts) {
     logger.info(`[prompt-discovery] Saving prompt: "${p.title}" (${p.category})`);
-    // We save them as 'draft' for review
     const saved = await createPrompt({
       title: p.title,
       content: p.content,
@@ -174,6 +428,9 @@ export async function discoverAndSavePrompts(userId: string) {
     }
   }
 
-  logger.info(`[prompt-discovery] Discovery complete. Saved ${savedPrompts.length}/${allDiscoveredPrompts.length} prompts`);
-  return savedPrompts;
+  logger.info(
+    `[prompt-discovery] Discovery complete. Saved ${savedPrompts.length}/${allDiscoveredPrompts.length} prompts`
+  );
+
+  return { savedPrompts, errors };
 }

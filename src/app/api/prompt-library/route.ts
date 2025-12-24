@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getPrompts, createPrompt } from '@/lib/prompt-library';
-import type { PromptCategory } from '@/lib/prompt-library/types';
+import type { PromptCategory, PromptStatus } from '@/lib/prompt-library/types';
 import { logger } from '@/lib/logger';
 
 const createPromptSchema = z.object({
@@ -24,6 +24,7 @@ export async function GET(request: NextRequest) {
       tags?: string[];
       favorites?: boolean;
       search?: string;
+      status?: PromptStatus | 'all';
     } = {};
 
     const category = searchParams.get('category');
@@ -37,6 +38,9 @@ export async function GET(request: NextRequest) {
 
     const search = searchParams.get('search');
     if (search) filters.search = search;
+
+    const status = searchParams.get('status');
+    if (status) filters.status = status as PromptStatus | 'all';
 
     const prompts = await getPrompts(filters);
     const response = NextResponse.json(prompts);

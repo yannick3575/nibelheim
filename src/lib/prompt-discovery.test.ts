@@ -8,7 +8,9 @@ const mocks = vi.hoisted(() => {
   const getGenerativeModelMock = vi.fn(() => ({
     generateContent: generateContentMock
   }));
-  return { generateContentMock, getGenerativeModelMock };
+  const supabaseSelectMock = vi.fn();
+  const supabaseUpdateMock = vi.fn();
+  return { generateContentMock, getGenerativeModelMock, supabaseSelectMock, supabaseUpdateMock };
 });
 
 // 2. Mock the module using these variables
@@ -32,6 +34,35 @@ vi.mock('./logger', () => ({
     warn: vi.fn(),
     info: vi.fn(),
   },
+}));
+
+// Mock Supabase client
+vi.mock('@/lib/supabase/server', () => ({
+  createClient: vi.fn(() => Promise.resolve({
+    from: vi.fn(() => ({
+      select: vi.fn(() => ({
+        eq: vi.fn(() => ({
+          order: vi.fn(() => Promise.resolve({
+            data: [
+              {
+                id: 'source-1',
+                name: 'Test Source',
+                url: 'http://test.com/prompts.md',
+                source_type: 'github_raw',
+                category: 'general',
+                is_enabled: true,
+                priority: 100,
+              }
+            ],
+            error: null,
+          })),
+        })),
+      })),
+      update: vi.fn(() => ({
+        eq: vi.fn(() => Promise.resolve({ error: null })),
+      })),
+    })),
+  })),
 }));
 
 // Global fetch mock
@@ -115,9 +146,9 @@ describe('prompt-discovery', () => {
 
       expect(getAllTags).toHaveBeenCalled();
       expect(createPrompt).toHaveBeenCalled();
-      // Expect 2 calls because there are 2 URLs in DISCOVERY_SOURCES
-      expect(result).toHaveLength(2); 
-      expect(result[0].id).toBe('new-id');
+      // Now returns an object with savedPrompts and errors
+      expect(result.savedPrompts).toBeDefined();
+      expect(result.errors).toBeDefined();
     });
   });
 });

@@ -10,7 +10,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Star, Copy, Pencil, Trash2, Check, MoreVertical, Braces, Sparkles } from 'lucide-react';
+import { Star, Copy, Pencil, Trash2, Check, MoreVertical, Braces, Sparkles, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { extractVariables, CATEGORY_COLORS, type Prompt } from '@/lib/prompt-library/types';
 import { toast } from 'sonner';
@@ -84,6 +84,25 @@ export function PromptCard({ prompt, onDelete, onUpdate }: PromptCardProps) {
     }
   };
 
+  const handlePublish = async () => {
+    try {
+      const response = await fetch(`/api/prompt-library/${prompt.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'published' }),
+      });
+
+      if (!response.ok) throw new Error('Failed to publish');
+
+      const updated = await response.json();
+      onUpdate(updated);
+      toast.success('Prompt publié !');
+    } catch (error) {
+      console.error('Error publishing prompt:', error);
+      toast.error('Erreur lors de la publication');
+    }
+  };
+
   return (
     <>
       <Card className={cn("group hover:border-primary/50 transition-colors", prompt.status === 'draft' && "border-orange-500/30 bg-orange-500/5 hover:border-orange-500/50")}>
@@ -142,6 +161,12 @@ export function PromptCard({ prompt, onDelete, onUpdate }: PromptCardProps) {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
+                  {prompt.status === 'draft' && (
+                    <DropdownMenuItem onClick={handlePublish} className="text-green-600">
+                      <CheckCircle2 className="mr-2 h-4 w-4" />
+                      Publier
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuItem onClick={() => setShowEditDialog(true)}>
                     <Pencil className="mr-2 h-4 w-4" />
                     Modifier

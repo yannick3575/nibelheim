@@ -19,6 +19,7 @@ const updatePromptSchema = z
       .max(20, 'Too many tags (max 20)')
       .optional(),
     is_favorite: z.boolean().optional(),
+    status: z.enum(['draft', 'published', 'archived']).optional(),
   })
   .refine((data) => Object.keys(data).length > 0, {
     message: 'At least one field must be provided',
