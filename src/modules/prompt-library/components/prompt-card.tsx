@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -23,7 +23,9 @@ interface PromptCardProps {
   onUpdate: (prompt: Prompt) => void;
 }
 
-export function PromptCard({ prompt, onDelete, onUpdate }: PromptCardProps) {
+// Optimization: Use memo to prevent re-renders when other prompts in the list are updated.
+// The parent component ensures that the prompt object reference is stable for unchanged items.
+export const PromptCard = memo(function PromptCard({ prompt, onDelete, onUpdate }: PromptCardProps) {
   const [isFavorite, setIsFavorite] = useState(prompt.is_favorite);
   const [showVariableDialog, setShowVariableDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
@@ -211,4 +213,4 @@ export function PromptCard({ prompt, onDelete, onUpdate }: PromptCardProps) {
       />
     </>
   );
-}
+});
