@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useOptimistic, useTransition } from 'react';
 import { ExternalLink, MessageSquare, Check, Circle, Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,40 +17,48 @@ interface ArticleCardProps {
 }
 
 export function ArticleCard({ article, onToggleRead, onToggleFavorite }: ArticleCardProps) {
-    const [isRead, setIsRead] = useState(article.read);
-    const [isFavorite, setIsFavorite] = useState(article.is_favorite);
-    const [isUpdating, setIsUpdating] = useState(false);
-    const [isFavoriteUpdating, setIsFavoriteUpdating] = useState(false);
+    // React 19: useOptimistic for instant UI feedback with automatic rollback on error
+    const [optimisticRead, setOptimisticRead] = useOptimistic(
+        article.read,
+        (_current, newValue: boolean) => newValue
+    );
+    const [optimisticFavorite, setOptimisticFavorite] = useOptimistic(
+        article.is_favorite,
+        (_current, newValue: boolean) => newValue
+    );
+    const [isReadPending, startReadTransition] = useTransition();
+    const [isFavoritePending, startFavoriteTransition] = useTransition();
 
-    const handleToggleRead = async () => {
-        setIsUpdating(true);
-        try {
-            await onToggleRead(article.id, !isRead);
-            setIsRead(!isRead);
-        } catch (error) {
-            console.error('Failed to toggle read status:', error);
-        } finally {
-            setIsUpdating(false);
-        }
+    const handleToggleRead = () => {
+        const newRead = !optimisticRead;
+        setOptimisticRead(newRead); // Instant UI update
+
+        startReadTransition(async () => {
+            try {
+                await onToggleRead(article.id, newRead);
+            } catch (error) {
+                console.error('Failed to toggle read status:', error);
+                // useOptimistic automatically reverts on transition end with error
+            }
+        });
     };
 
-    const handleToggleFavorite = async () => {
-        if (!onToggleFavorite || isFavoriteUpdating) return; // Guard against race condition
+    const handleToggleFavorite = () => {
+        if (!onToggleFavorite) return;
 
-        const newFavorite = !isFavorite;
-        setIsFavorite(newFavorite); // Optimistic update
-        setIsFavoriteUpdating(true);
+        const newFavorite = !optimisticFavorite;
+        setOptimisticFavorite(newFavorite); // Instant UI update
 
-        try {
-            await onToggleFavorite(article.id, newFavorite);
-            toast.success(newFavorite ? 'Ajouté aux favoris' : 'Retiré des favoris');
-        } catch (error) {
-            console.error('Failed to toggle favorite status:', error);
-            setIsFavorite(!newFavorite); // Revert on error
-            toast.error('Erreur lors de la mise à jour');
-        } finally {
-            setIsFavoriteUpdating(false);
-        }
+        startFavoriteTransition(async () => {
+            try {
+                await onToggleFavorite(article.id, newFavorite);
+                toast.success(newFavorite ? 'Ajouté aux favoris' : 'Retiré des favoris');
+            } catch (error) {
+                console.error('Failed to toggle favorite status:', error);
+                // useOptimistic automatically reverts on transition end with error
+                toast.error('Erreur lors de la mise à jour');
+            }
+        });
     };
 
     // Extract HN discussion URL from summary if present
@@ -60,7 +68,7 @@ export function ArticleCard({ article, onToggleRead, onToggleFavorite }: Article
     return (
         <Card className={cn(
             "transition-opacity",
-            isRead && "opacity-60"
+            optimisticRead && "opacity-60"
         )}>
             <CardHeader className="pb-3 p-4 sm:p-6">
                 <div className="flex items-start justify-between gap-2 sm:gap-4">
@@ -106,28 +114,30 @@ export function ArticleCard({ article, onToggleRead, onToggleFavorite }: Article
                                 variant="ghost"
                                 size="sm"
                                 onClick={handleToggleFavorite}
-                                disabled={isFavoriteUpdating}
+                                disabled={isFavoritePending}
                                 className={cn(
                                     "flex-shrink-0 h-7 w-7 sm:h-8 sm:w-8 p-0",
-                                    isFavorite && "text-yellow-500"
+                                    optimisticFavorite && "text-yellow-500",
+                                    isFavoritePending && "opacity-70"
                                 )}
-                                title={isFavorite ? "Retirer des favoris" : "Ajouter aux favoris"}
+                                title={optimisticFavorite ? "Retirer des favoris" : "Ajouter aux favoris"}
                             >
-                                <Star className={cn("h-3.5 w-3.5 sm:h-4 sm:w-4", isFavorite && "fill-yellow-500")} />
+                                <Star className={cn("h-3.5 w-3.5 sm:h-4 sm:w-4", optimisticFavorite && "fill-yellow-500")} />
                             </Button>
                         )}
                         <Button
                             variant="ghost"
                             size="sm"
                             onClick={handleToggleRead}
-                            disabled={isUpdating}
+                            disabled={isReadPending}
                             className={cn(
                                 "flex-shrink-0 h-7 w-7 sm:h-8 sm:w-8 p-0",
-                                isRead && "text-green-500 hover:text-green-400"
+                                optimisticRead && "text-green-500 hover:text-green-400",
+                                isReadPending && "opacity-70"
                             )}
-                            title={isRead ? "Marquer comme non lu" : "Marquer comme lu"}
+                            title={optimisticRead ? "Marquer comme non lu" : "Marquer comme lu"}
                         >
-                            {isRead ? (
+                            {optimisticRead ? (
                                 <Check className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                             ) : (
                                 <Circle className="h-3.5 w-3.5 sm:h-4 sm:w-4" />

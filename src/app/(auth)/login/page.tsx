@@ -1,7 +1,6 @@
 'use client';
 
-import { useState } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import { useState, useEffect, useActionState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,99 +8,47 @@ import { Separator } from '@/components/ui/separator';
 import { FlaskConical, Mail, ArrowRight, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
+import { loginAction, magicLinkAction, signUpAction, type AuthState } from './actions';
+
+const initialState: AuthState = { error: null, success: null };
 
 export default function LoginPage() {
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
     const [mode, setMode] = useState<'login' | 'magic-link'>('login');
     const router = useRouter();
 
-    // Lazy initialize Supabase client to avoid build-time errors
-    const getSupabase = () => createClient();
+    // React 19: useActionState for form state management
+    const [loginState, loginFormAction, isLoginPending] = useActionState(loginAction, initialState);
+    const [magicLinkState, magicLinkFormAction, isMagicLinkPending] = useActionState(magicLinkAction, initialState);
+    const [signUpState, signUpFormAction, isSignUpPending] = useActionState(signUpAction, initialState);
 
-    // Use configured site URL for redirects, fallback to current origin
-    const getSiteUrl = () => process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
-
-    const handleLogin = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setIsLoading(true);
-
-        try {
-            const { error } = await getSupabase().auth.signInWithPassword({
-                email,
-                password,
-            });
-
-            if (error) {
-                toast.error(error.message);
-                return;
-            }
-
+    // Handle state changes with effects
+    useEffect(() => {
+        if (loginState.error) {
+            toast.error(loginState.error);
+        } else if (loginState.success === 'login') {
             toast.success('Connexion réussie !');
             router.push('/');
             router.refresh();
-        } catch (error) {
-            toast.error('Une erreur est survenue');
-        } finally {
-            setIsLoading(false);
         }
-    };
+    }, [loginState, router]);
 
-    const handleMagicLink = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setIsLoading(true);
-
-        try {
-            const { error } = await getSupabase().auth.signInWithOtp({
-                email,
-                options: {
-                    emailRedirectTo: `${getSiteUrl()}/auth/callback`,
-                },
-            });
-
-            if (error) {
-                toast.error(error.message);
-                return;
-            }
-
+    useEffect(() => {
+        if (magicLinkState.error) {
+            toast.error(magicLinkState.error);
+        } else if (magicLinkState.success === 'magic-link') {
             toast.success('Lien magique envoyé ! Vérifiez votre boîte mail.');
-        } catch (error) {
-            toast.error('Une erreur est survenue');
-        } finally {
-            setIsLoading(false);
         }
-    };
+    }, [magicLinkState]);
 
-    const handleSignUp = async () => {
-        if (!email || !password) {
-            toast.error('Email et mot de passe requis');
-            return;
-        }
-
-        setIsLoading(true);
-
-        try {
-            const { error } = await getSupabase().auth.signUp({
-                email,
-                password,
-                options: {
-                    emailRedirectTo: `${getSiteUrl()}/auth/callback`,
-                },
-            });
-
-            if (error) {
-                toast.error(error.message);
-                return;
-            }
-
+    useEffect(() => {
+        if (signUpState.error) {
+            toast.error(signUpState.error);
+        } else if (signUpState.success === 'signup') {
             toast.success('Compte créé ! Vérifiez votre email pour confirmer.');
-        } catch (error) {
-            toast.error('Une erreur est survenue');
-        } finally {
-            setIsLoading(false);
         }
-    };
+    }, [signUpState]);
+
+    const isLoading = isLoginPending || isMagicLinkPending || isSignUpPending;
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-background p-4 relative overflow-hidden">
@@ -162,27 +109,31 @@ export default function LoginPage() {
                 </CardHeader>
                 <CardContent>
                     {mode === 'login' ? (
-                        <form onSubmit={handleLogin} className="space-y-4">
+                        <form action={loginFormAction} className="space-y-4">
                             <div className="space-y-2">
                                 <Input
                                     type="email"
+                                    name="email"
                                     placeholder="email@exemple.com"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
                                     required
+                                    disabled={isLoading}
                                 />
                             </div>
                             <div className="space-y-2">
                                 <Input
                                     type="password"
+                                    name="password"
                                     placeholder="Mot de passe"
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
                                     required
+                                    disabled={isLoading}
                                 />
                             </div>
-                            <Button type="submit" className="w-full bg-gradient-to-r from-primary to-aurora-violet hover:from-primary/90 hover:to-aurora-violet/90 transition-all duration-300" disabled={isLoading}>
-                                {isLoading ? (
+                            <Button
+                                type="submit"
+                                className="w-full bg-gradient-to-r from-primary to-aurora-violet hover:from-primary/90 hover:to-aurora-violet/90 transition-all duration-300"
+                                disabled={isLoading}
+                            >
+                                {isLoginPending ? (
                                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                 ) : (
                                     <ArrowRight className="mr-2 h-4 w-4" />
@@ -190,28 +141,35 @@ export default function LoginPage() {
                                 Se connecter
                             </Button>
                             <Button
-                                type="button"
+                                type="submit"
+                                formAction={signUpFormAction}
                                 variant="outline"
                                 className="w-full border-primary/30 hover:bg-primary/10 hover:border-primary/50 transition-all duration-300"
-                                onClick={handleSignUp}
                                 disabled={isLoading}
                             >
+                                {isSignUpPending ? (
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                ) : null}
                                 Créer un compte
                             </Button>
                         </form>
                     ) : (
-                        <form onSubmit={handleMagicLink} className="space-y-4">
+                        <form action={magicLinkFormAction} className="space-y-4">
                             <div className="space-y-2">
                                 <Input
                                     type="email"
+                                    name="email"
                                     placeholder="email@exemple.com"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
                                     required
+                                    disabled={isLoading}
                                 />
                             </div>
-                            <Button type="submit" className="w-full bg-gradient-to-r from-primary to-aurora-violet hover:from-primary/90 hover:to-aurora-violet/90 transition-all duration-300" disabled={isLoading}>
-                                {isLoading ? (
+                            <Button
+                                type="submit"
+                                className="w-full bg-gradient-to-r from-primary to-aurora-violet hover:from-primary/90 hover:to-aurora-violet/90 transition-all duration-300"
+                                disabled={isLoading}
+                            >
+                                {isMagicLinkPending ? (
                                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                 ) : (
                                     <Mail className="mr-2 h-4 w-4" />
@@ -232,6 +190,7 @@ export default function LoginPage() {
                         variant="ghost"
                         className="w-full"
                         onClick={() => setMode(mode === 'login' ? 'magic-link' : 'login')}
+                        disabled={isLoading}
                     >
                         {mode === 'login' ? (
                             <>
