@@ -1,6 +1,7 @@
 'use client';
 
 import { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import { createClient } from '@/lib/supabase/client';
 
 interface User {
     id: string;
@@ -23,6 +24,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
     const [isLoading, setIsLoading] = useState(false);
 
+    // Initialize Supabase client
+    const supabase = createClient();
+
     const signIn = useCallback(async (email: string, password: string) => {
         setIsLoading(true);
         try {
@@ -41,12 +45,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const signInWithMagicLink = useCallback(async (email: string) => {
         setIsLoading(true);
         try {
-            // TODO: Implement Supabase magic link
+            const { error } = await supabase.auth.signInWithOtp({
+                email,
+            });
+            if (error) throw error;
             console.log('Magic link sent to:', email);
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    }, [supabase]);
 
     const signOut = useCallback(async () => {
         setIsLoading(true);
