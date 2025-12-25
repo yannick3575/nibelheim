@@ -1,6 +1,7 @@
 'use client';
 
 import { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import { createClient } from '../supabase/client';
 
 interface User {
     id: string;
@@ -22,6 +23,8 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
     const [isLoading, setIsLoading] = useState(false);
+    // Initialize Supabase client
+    const [supabase] = useState(() => createClient());
 
     const signIn = useCallback(async (email: string, password: string) => {
         setIsLoading(true);
@@ -51,12 +54,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const signOut = useCallback(async () => {
         setIsLoading(true);
         try {
-            // TODO: Implement Supabase signout
+            await supabase.auth.signOut();
             setUser(null);
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    }, [supabase]);
 
     return (
         <AuthContext.Provider value={{ user, isLoading, signIn, signInWithMagicLink, signOut }}>
