@@ -1,7 +1,22 @@
+import 'server-only';
+
+import { createHash } from 'crypto';
 import { NextRequest } from 'next/server';
 import { createClient as createServerClient } from '@/lib/supabase/server';
 import { createClient } from '@supabase/supabase-js';
 import { logger } from '@/lib/logger';
+
+// ============================================
+// CRYPTO UTILITIES
+// ============================================
+
+/**
+ * Hash a token using SHA-256 (hex encoded)
+ * Matches the PostgreSQL: encode(digest(token, 'sha256'), 'hex')
+ */
+function hashToken(token: string): string {
+    return createHash('sha256').update(token).digest('hex');
+}
 
 // ============================================
 // TYPES
@@ -11,11 +26,16 @@ export interface ApiToken {
     id: string;
     user_id: string;
     name: string;
-    token: string;
+    token_prefix: string;
     scopes: string[];
     last_used_at: string | null;
     expires_at: string | null;
     created_at: string;
+}
+
+/** Returned only once at creation time */
+export interface ApiTokenWithSecret extends ApiToken {
+    token: string;
 }
 
 export interface AuthContext {
@@ -49,6 +69,9 @@ export async function validateApiToken(request: NextRequest): Promise<AuthContex
         return null;
     }
 
+    // Hash the token before comparing (tokens are stored as SHA-256 hashes)
+    const tokenHash = hashToken(token);
+
     // Validate token against database using service role client
     // We need service role because RLS policies require auth.uid()
     const supabase = createClient(
@@ -59,7 +82,7 @@ export async function validateApiToken(request: NextRequest): Promise<AuthContex
     const { data: apiToken, error } = await supabase
         .from('api_tokens')
         .select('id, user_id, scopes, expires_at')
-        .eq('token', token)
+        .eq('token_hash', tokenHash)
         .single();
 
     if (error || !apiToken) {
@@ -97,39 +120,50 @@ export function hasScope(auth: AuthContext, requiredScope: string): boolean {
 
 /**
  * Create a new API token for the current user
+ *
+ * IMPORTANT: The returned `token` field contains the plaintext token.
+ * This is the ONLY time the token will be available - it is not stored.
+ * The UI must display it once and warn the user to save it.
  */
-export async function createApiToken(name: string, scopes: string[], expiresInDays?: number): Promise<ApiToken | null> {
+export async function createApiToken(name: string, scopes: string[], expiresInDays?: number): Promise<ApiTokenWithSecret | null> {
     const supabase = await createServerClient();
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) return null;
 
-    // Generate token using database function
+    // Generate token using database function (returns token, token_hash, token_prefix)
     const { data: tokenData, error: tokenError } = await supabase
         .rpc('generate_api_token');
 
-    if (tokenError || !tokenData) {
+    if (tokenError || !tokenData || tokenData.length === 0) {
         logger.error('[api-auth] generateApiToken failed:', tokenError);
         return null;
     }
 
-    const token = tokenData as string;
+    // The RPC returns a table, so we get the first row
+    const { token, token_hash, token_prefix } = tokenData[0] as {
+        token: string;
+        token_hash: string;
+        token_prefix: string;
+    };
 
     // Calculate expiration
     const expiresAt = expiresInDays
         ? new Date(Date.now() + expiresInDays * 24 * 60 * 60 * 1000).toISOString()
         : null;
 
+    // Store only the hash, never the plaintext token
     const { data, error } = await supabase
         .from('api_tokens')
         .insert({
             user_id: user.id,
             name,
-            token,
+            token_hash,
+            token_prefix,
             scopes,
             expires_at: expiresAt,
         })
-        .select()
+        .select('id, user_id, name, token_prefix, scopes, last_used_at, expires_at, created_at')
         .single();
 
     if (error) {
@@ -137,18 +171,23 @@ export async function createApiToken(name: string, scopes: string[], expiresInDa
         return null;
     }
 
-    return data;
+    // Return the token WITH the plaintext secret (only time it's available)
+    return {
+        ...data,
+        token, // Plaintext token - display once then discard!
+    };
 }
 
 /**
  * List all API tokens for the current user
+ * Note: Only returns token_prefix for display, never the actual token
  */
-export async function listApiTokens(): Promise<Omit<ApiToken, 'token'>[]> {
+export async function listApiTokens(): Promise<ApiToken[]> {
     const supabase = await createServerClient();
 
     const { data, error } = await supabase
         .from('api_tokens')
-        .select('id, user_id, name, scopes, last_used_at, expires_at, created_at')
+        .select('id, user_id, name, token_prefix, scopes, last_used_at, expires_at, created_at')
         .order('created_at', { ascending: false });
 
     if (error) {
