@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, memo } from 'react';
+import { useState, useOptimistic, useTransition, memo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -26,7 +26,13 @@ interface PromptCardProps {
 // Optimization: Use memo to prevent re-renders when other prompts in the list are updated.
 // The parent component ensures that the prompt object reference is stable for unchanged items.
 export const PromptCard = memo(function PromptCard({ prompt, onDelete, onUpdate }: PromptCardProps) {
-  const [isFavorite, setIsFavorite] = useState(prompt.is_favorite);
+  // React 19: useOptimistic for instant UI feedback with automatic rollback on error
+  const [optimisticFavorite, setOptimisticFavorite] = useOptimistic(
+    prompt.is_favorite,
+    (_current, newValue: boolean) => newValue
+  );
+  const [isPending, startTransition] = useTransition();
+
   const [showVariableDialog, setShowVariableDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -34,27 +40,29 @@ export const PromptCard = memo(function PromptCard({ prompt, onDelete, onUpdate 
   const variables = extractVariables(prompt.content);
   const hasVariables = variables.length > 0;
 
-  const handleToggleFavorite = async () => {
-    const newFavorite = !isFavorite;
-    setIsFavorite(newFavorite); // Optimistic update
+  const handleToggleFavorite = () => {
+    const newFavorite = !optimisticFavorite;
+    setOptimisticFavorite(newFavorite); // Instant UI update
 
-    try {
-      const response = await fetch(`/api/prompt-library/${prompt.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ is_favorite: newFavorite }),
-      });
+    startTransition(async () => {
+      try {
+        const response = await fetch(`/api/prompt-library/${prompt.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ is_favorite: newFavorite }),
+        });
 
-      if (!response.ok) throw new Error('Failed to toggle favorite');
+        if (!response.ok) throw new Error('Failed to toggle favorite');
 
-      const updated = await response.json();
-      onUpdate(updated);
-      toast.success(newFavorite ? 'Ajouté aux favoris' : 'Retiré des favoris');
-    } catch (error) {
-      console.error('Error toggling favorite:', error);
-      setIsFavorite(!newFavorite); // Revert on error
-      toast.error('Erreur lors de la mise à jour');
-    }
+        const updated = await response.json();
+        onUpdate(updated);
+        toast.success(newFavorite ? 'Ajouté aux favoris' : 'Retiré des favoris');
+      } catch (error) {
+        console.error('Error toggling favorite:', error);
+        // useOptimistic automatically reverts on transition end with error
+        toast.error('Erreur lors de la mise à jour');
+      }
+    });
   };
 
   const handleCopy = () => {
@@ -150,10 +158,11 @@ export const PromptCard = memo(function PromptCard({ prompt, onDelete, onUpdate 
               <Button
                 variant="ghost"
                 size="icon"
-                className={cn('h-8 w-8', isFavorite && 'text-yellow-500')}
+                className={cn('h-8 w-8', optimisticFavorite && 'text-yellow-500', isPending && 'opacity-70')}
                 onClick={handleToggleFavorite}
+                disabled={isPending}
               >
-                <Star className={cn('h-4 w-4', isFavorite && 'fill-yellow-500')} />
+                <Star className={cn('h-4 w-4', optimisticFavorite && 'fill-yellow-500')} />
               </Button>
 
               <DropdownMenu>
