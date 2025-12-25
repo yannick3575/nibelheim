@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { MessageBubble } from './message-bubble';
 import { planSimulation } from '../actions/agent';
-import { executeSimulation } from '@/lib/stochastic-lab/simulations';
+import { useSimulationWorker } from '@/lib/stochastic-lab/useSimulationWorker';
 import type { ChatMessage, Conversation, SimulationConfig } from '@/lib/stochastic-lab/types';
 
 interface ChatInterfaceProps {
@@ -23,6 +23,9 @@ export function ChatInterface({
   const [runningSimulationId, setRunningSimulationId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Web Worker for simulations (keeps UI responsive)
+  const { runSimulation, state: workerState } = useSimulationWorker();
 
   const messages = conversation?.messages || [];
 
@@ -92,7 +95,7 @@ export function ChatInterface({
   }, [input, isLoading, conversation, messages, onConversationUpdate]);
 
   const handleRunSimulation = useCallback(
-    (messageId: string, config: SimulationConfig) => {
+    async (messageId: string, config: SimulationConfig) => {
       if (runningSimulationId) return;
 
       setRunningSimulationId(messageId);
@@ -105,48 +108,46 @@ export function ChatInterface({
       );
       onConversationUpdate(updatedMessages);
 
-      // Execute simulation in next tick to allow UI update
-      setTimeout(() => {
-        try {
-          const result = executeSimulation(config);
+      try {
+        // Execute simulation in Web Worker (non-blocking)
+        const result = await runSimulation(config);
 
-          // Update message with result
-          const finalMessages = updatedMessages.map((msg) =>
-            msg.id === messageId && msg.simulation
-              ? {
-                  ...msg,
-                  simulation: {
-                    ...msg.simulation,
-                    status: 'completed' as const,
-                    result,
-                  },
-                }
-              : msg
-          );
-          onConversationUpdate(finalMessages);
-        } catch (error) {
-          console.error('Simulation error:', error);
+        // Update message with result
+        const finalMessages = messages.map((msg) =>
+          msg.id === messageId && msg.simulation
+            ? {
+                ...msg,
+                simulation: {
+                  ...msg.simulation,
+                  status: 'completed' as const,
+                  result,
+                },
+              }
+            : msg
+        );
+        onConversationUpdate(finalMessages);
+      } catch (error) {
+        console.error('Simulation error:', error);
 
-          // Update message with error
-          const errorMessages = updatedMessages.map((msg) =>
-            msg.id === messageId && msg.simulation
-              ? {
-                  ...msg,
-                  simulation: {
-                    ...msg.simulation,
-                    status: 'error' as const,
-                    error: error instanceof Error ? error.message : 'Erreur inconnue',
-                  },
-                }
-              : msg
-          );
-          onConversationUpdate(errorMessages);
-        } finally {
-          setRunningSimulationId(null);
-        }
-      }, 50);
+        // Update message with error
+        const errorMessages = messages.map((msg) =>
+          msg.id === messageId && msg.simulation
+            ? {
+                ...msg,
+                simulation: {
+                  ...msg.simulation,
+                  status: 'error' as const,
+                  error: error instanceof Error ? error.message : 'Erreur inconnue',
+                },
+              }
+            : msg
+        );
+        onConversationUpdate(errorMessages);
+      } finally {
+        setRunningSimulationId(null);
+      }
     },
-    [messages, runningSimulationId, onConversationUpdate]
+    [messages, runningSimulationId, onConversationUpdate, runSimulation]
   );
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
