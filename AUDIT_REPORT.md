@@ -63,3 +63,13 @@
 Le projet Nibelheim présente une base architecturale solide (Next.js 15, Supabase, Modularité). Les risques principaux sont la **sécurité des tokens API** (critique) et la **performance des simulations côté client** (bloquant pour l'UX à grande échelle). L'intégration de l'IA via Server Actions est standard et fonctionnelle.
 
 **Priorité immédiate** : Hasher les tokens API et déplacer les calculs lourds dans un Web Worker.
+
+## 4. Statut de l'Implémentation
+
+> **Mise à jour suite aux retours utilisateur** : Les points suivants ont été implémentés (commits `268823b`, `65642c3`).
+
+- ✅ **Sécurité** : Hachage SHA-256 des tokens API.
+- ✅ **Sécurité** : Protection `server-only` ajoutée sur `api-auth.ts`.
+- ✅ **Performance** : Ajout des index `user_id` manquants.
+- ✅ **Performance** : Migration des simulations Monte Carlo vers des Web Workers.
+- ✅ **Performance** : Utilisation de l'algorithme de Welford pour optimiser la mémoire.
