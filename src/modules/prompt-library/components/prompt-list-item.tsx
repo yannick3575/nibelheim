@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -22,7 +22,9 @@ interface PromptListItemProps {
   onUpdate: (prompt: Prompt) => void;
 }
 
-export function PromptListItem({ prompt, onDelete, onUpdate }: PromptListItemProps) {
+// Optimization: Use memo to prevent re-renders when other prompts in the list are updated.
+// The parent component ensures that the prompt object reference is stable for unchanged items.
+export const PromptListItem = memo(function PromptListItem({ prompt, onDelete, onUpdate }: PromptListItemProps) {
   const [isFavorite, setIsFavorite] = useState(prompt.is_favorite);
   const [showVariableDialog, setShowVariableDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
@@ -171,4 +173,4 @@ export function PromptListItem({ prompt, onDelete, onUpdate }: PromptListItemPro
       />
     </>
   );
-}
+});
