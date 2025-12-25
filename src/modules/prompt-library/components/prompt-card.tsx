@@ -26,7 +26,7 @@ interface PromptCardProps {
 // Optimization: Use memo to prevent re-renders when other prompts in the list are updated.
 // The parent component ensures that the prompt object reference is stable for unchanged items.
 export const PromptCard = memo(function PromptCard({ prompt, onDelete, onUpdate }: PromptCardProps) {
-  // React 19: useOptimistic for instant UI feedback with automatic rollback on error
+  // React 19: useOptimistic for instant UI feedback - reverts to source value on re-render
   const [optimisticFavorite, setOptimisticFavorite] = useOptimistic(
     prompt.is_favorite,
     (_current, newValue: boolean) => newValue
@@ -59,7 +59,7 @@ export const PromptCard = memo(function PromptCard({ prompt, onDelete, onUpdate 
         toast.success(newFavorite ? 'Ajouté aux favoris' : 'Retiré des favoris');
       } catch (error) {
         console.error('Error toggling favorite:', error);
-        // useOptimistic automatically reverts on transition end with error
+        // Reverts to source value when component re-renders
         toast.error('Erreur lors de la mise à jour');
       }
     });

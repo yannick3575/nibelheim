@@ -17,7 +17,7 @@ interface ArticleCardProps {
 }
 
 export function ArticleCard({ article, onToggleRead, onToggleFavorite }: ArticleCardProps) {
-    // React 19: useOptimistic for instant UI feedback with automatic rollback on error
+    // React 19: useOptimistic for instant UI feedback - reverts to source value on re-render
     const [optimisticRead, setOptimisticRead] = useOptimistic(
         article.read,
         (_current, newValue: boolean) => newValue
@@ -38,7 +38,7 @@ export function ArticleCard({ article, onToggleRead, onToggleFavorite }: Article
                 await onToggleRead(article.id, newRead);
             } catch (error) {
                 console.error('Failed to toggle read status:', error);
-                // useOptimistic automatically reverts on transition end with error
+                // Reverts to source value when component re-renders
             }
         });
     };
@@ -55,7 +55,7 @@ export function ArticleCard({ article, onToggleRead, onToggleFavorite }: Article
                 toast.success(newFavorite ? 'Ajouté aux favoris' : 'Retiré des favoris');
             } catch (error) {
                 console.error('Failed to toggle favorite status:', error);
-                // useOptimistic automatically reverts on transition end with error
+                // Reverts to source value when component re-renders
                 toast.error('Erreur lors de la mise à jour');
             }
         });
