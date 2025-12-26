@@ -15,7 +15,7 @@ const markdownComponents: Components = {
     hr: ({ node: _node, ...props }) => <hr className="my-8 border-border" {...props} />,
 };
 
-export function MarkdownRenderer({ content, className = '' }: MarkdownRendererProps) {
+export const MarkdownRenderer = React.memo(function MarkdownRenderer({ content, className = '' }: MarkdownRendererProps) {
     return (
         <div className={`prose prose-zinc dark:prose-invert max-w-none ${className}`}>
             <ReactMarkdown components={markdownComponents}>
@@ -23,4 +23,4 @@ export function MarkdownRenderer({ content, className = '' }: MarkdownRendererPr
             </ReactMarkdown>
         </div>
     );
-}
+});
