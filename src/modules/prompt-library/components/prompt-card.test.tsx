@@ -134,13 +134,10 @@ describe('PromptCard', () => {
 
     render(<PromptCard {...defaultProps} />);
 
-    // Find the favorite button by looking for the star icon's parent button
-    const starIcon = document.querySelector('svg.lucide-star');
-    const favoriteButton = starIcon?.closest('button');
+    // Find the favorite button by its accessible name
+    const favoriteButton = screen.getByRole('button', { name: /ajouter aux favoris/i });
 
-    if (favoriteButton) {
-      fireEvent.click(favoriteButton);
-    }
+    fireEvent.click(favoriteButton);
 
     await waitFor(() => {
       expect(mockFetch).toHaveBeenCalledWith(
@@ -160,12 +157,10 @@ describe('PromptCard', () => {
 
     render(<PromptCard {...defaultProps} />);
 
-    const starIcon = document.querySelector('svg.lucide-star');
-    const favoriteButton = starIcon?.closest('button');
+    // Find the favorite button by its accessible name
+    const favoriteButton = screen.getByRole('button', { name: /ajouter aux favoris/i });
 
-    if (favoriteButton) {
-      fireEvent.click(favoriteButton);
-    }
+    fireEvent.click(favoriteButton);
 
     await waitFor(() => {
       expect(toast.error).toHaveBeenCalledWith('Erreur lors de la mise à jour');

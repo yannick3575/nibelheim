@@ -5,6 +5,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -155,19 +160,27 @@ export const PromptCard = memo(function PromptCard({ prompt, onDelete, onUpdate 
             </div>
 
             <div className="flex items-center gap-1">
-              <Button
-                variant="ghost"
-                size="icon"
-                className={cn('h-8 w-8', optimisticFavorite && 'text-yellow-500', isPending && 'opacity-70')}
-                onClick={handleToggleFavorite}
-                disabled={isPending}
-              >
-                <Star className={cn('h-4 w-4', optimisticFavorite && 'fill-yellow-500')} />
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className={cn('h-8 w-8', optimisticFavorite && 'text-yellow-500', isPending && 'opacity-70')}
+                    onClick={handleToggleFavorite}
+                    disabled={isPending}
+                    aria-label={optimisticFavorite ? "Retirer des favoris" : "Ajouter aux favoris"}
+                  >
+                    <Star className={cn('h-4 w-4', optimisticFavorite && 'fill-yellow-500')} />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{optimisticFavorite ? "Retirer des favoris" : "Ajouter aux favoris"}</p>
+                </TooltipContent>
+              </Tooltip>
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Plus d'options">
                     <MoreVertical className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
