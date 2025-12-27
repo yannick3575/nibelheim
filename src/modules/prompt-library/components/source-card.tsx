@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -55,7 +55,8 @@ const SOURCE_TYPE_ICONS = {
   rss: Rss,
 };
 
-export function SourceCard({
+// Optimization: Use memo to prevent re-renders when other sources in the list are updated.
+export const SourceCard = memo(function SourceCard({
   source,
   onEdit,
   onDelete,
@@ -196,4 +197,4 @@ export function SourceCard({
       </CardContent>
     </Card>
   );
-}
+});
