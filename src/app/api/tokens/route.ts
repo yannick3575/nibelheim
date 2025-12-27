@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createApiToken, listApiTokens } from '@/lib/api-auth';
 import { logger } from '@/lib/logger';
+import { createClient } from '@/lib/supabase/server';
 
 const createTokenSchema = z.object({
     name: z.string().min(1).max(100),
@@ -15,6 +16,17 @@ const createTokenSchema = z.object({
  */
 export async function GET() {
     try {
+        // Authenticate user
+        const supabase = await createClient();
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+        if (authError || !user) {
+            return NextResponse.json(
+                { error: 'Unauthorized' },
+                { status: 401 }
+            );
+        }
+
         const tokens = await listApiTokens();
         return NextResponse.json({ tokens });
     } catch (error) {
@@ -39,6 +51,17 @@ export async function GET() {
  */
 export async function POST(request: NextRequest) {
     try {
+        // Authenticate user
+        const supabase = await createClient();
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+        if (authError || !user) {
+            return NextResponse.json(
+                { error: 'Unauthorized' },
+                { status: 401 }
+            );
+        }
+
         const body = await request.json();
         const validation = createTokenSchema.safeParse(body);
 
