@@ -9,9 +9,15 @@ import {
   getAllTags,
 } from './index';
 
-// Create mock query builder with chainable methods
+// Create mock query builder with chainable methods and thenable support
 const createMockQueryBuilder = () => {
-  const builder: Record<string, ReturnType<typeof vi.fn>> = {
+  // Default result that can be overridden per test
+  let queryResult = { data: null, error: null };
+
+  const builder: Record<string, ReturnType<typeof vi.fn>> & {
+    then: (resolve: (value: { data: unknown; error: unknown }) => void) => Promise<void>;
+    _setResult: (result: { data: unknown; error: unknown }) => void;
+  } = {
     select: vi.fn(() => builder),
     insert: vi.fn(() => builder),
     update: vi.fn(() => builder),
@@ -21,6 +27,12 @@ const createMockQueryBuilder = () => {
     textSearch: vi.fn(() => builder),
     order: vi.fn(() => builder),
     single: vi.fn(() => Promise.resolve({ data: null, error: null })),
+    // Make the builder thenable for `await query` pattern
+    then: (resolve) => Promise.resolve(queryResult).then(resolve),
+    // Helper to set the result for thenable resolution
+    _setResult: (result) => {
+      queryResult = result;
+    },
   };
   return builder;
 };
@@ -56,49 +68,48 @@ describe('prompt-library CRUD functions', () => {
         { id: '2', title: 'Prompt 2', content: 'Content 2' },
       ];
 
-      // Make the chain return data at the end
-      mockQueryBuilder.order.mockResolvedValue({ data: mockPrompts, error: null });
+      // Use thenable pattern - set result for await query
+      mockQueryBuilder._setResult({ data: mockPrompts, error: null });
 
       const result = await getPrompts();
 
       expect(mockSupabase.from).toHaveBeenCalledWith('prompt_library_prompts');
       expect(mockQueryBuilder.select).toHaveBeenCalledWith('*');
       expect(mockQueryBuilder.order).toHaveBeenCalledWith('updated_at', { ascending: false });
+      // Default status filter is applied
+      expect(mockQueryBuilder.eq).toHaveBeenCalledWith('status', 'published');
       expect(result).toEqual(mockPrompts);
     });
 
     it('should apply category filter', async () => {
-      mockQueryBuilder.eq.mockReturnValue(mockQueryBuilder);
-      mockQueryBuilder.order.mockReturnValue(mockQueryBuilder);
-      // After eq, the chain continues...
-      mockQueryBuilder.eq.mockResolvedValue({ data: [], error: null });
+      mockQueryBuilder._setResult({ data: [], error: null });
 
       await getPrompts({ category: 'coding' });
 
       expect(mockQueryBuilder.eq).toHaveBeenCalledWith('category', 'coding');
+      expect(mockQueryBuilder.eq).toHaveBeenCalledWith('status', 'published');
     });
 
     it('should apply favorites filter', async () => {
-      mockQueryBuilder.order.mockReturnValue(mockQueryBuilder);
-      mockQueryBuilder.eq.mockResolvedValue({ data: [], error: null });
+      mockQueryBuilder._setResult({ data: [], error: null });
 
       await getPrompts({ favorites: true });
 
       expect(mockQueryBuilder.eq).toHaveBeenCalledWith('is_favorite', true);
+      expect(mockQueryBuilder.eq).toHaveBeenCalledWith('status', 'published');
     });
 
     it('should apply tags filter', async () => {
-      mockQueryBuilder.order.mockReturnValue(mockQueryBuilder);
-      mockQueryBuilder.contains.mockResolvedValue({ data: [], error: null });
+      mockQueryBuilder._setResult({ data: [], error: null });
 
       await getPrompts({ tags: ['test', 'example'] });
 
       expect(mockQueryBuilder.contains).toHaveBeenCalledWith('tags', ['test', 'example']);
+      expect(mockQueryBuilder.eq).toHaveBeenCalledWith('status', 'published');
     });
 
     it('should apply search filter', async () => {
-      mockQueryBuilder.order.mockReturnValue(mockQueryBuilder);
-      mockQueryBuilder.textSearch.mockResolvedValue({ data: [], error: null });
+      mockQueryBuilder._setResult({ data: [], error: null });
 
       await getPrompts({ search: 'hello world' });
 
@@ -106,10 +117,11 @@ describe('prompt-library CRUD functions', () => {
         type: 'websearch',
         config: 'english',
       });
+      expect(mockQueryBuilder.eq).toHaveBeenCalledWith('status', 'published');
     });
 
     it('should return empty array on error', async () => {
-      mockQueryBuilder.order.mockResolvedValue({ data: null, error: new Error('DB error') });
+      mockQueryBuilder._setResult({ data: null, error: new Error('DB error') });
 
       const result = await getPrompts();
 
@@ -117,7 +129,7 @@ describe('prompt-library CRUD functions', () => {
     });
 
     it('should return empty array when data is null', async () => {
-      mockQueryBuilder.order.mockResolvedValue({ data: null, error: null });
+      mockQueryBuilder._setResult({ data: null, error: null });
 
       const result = await getPrompts();
 
@@ -177,6 +189,9 @@ describe('prompt-library CRUD functions', () => {
         category: 'coding',
         tags: ['test'],
         is_favorite: false,
+        source_url: undefined,
+        is_automated: false,
+        status: 'published',
       });
       expect(result).toEqual(mockPrompt);
     });
