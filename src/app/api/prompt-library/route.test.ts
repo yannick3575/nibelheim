@@ -16,6 +16,16 @@ vi.mock('@/lib/logger', () => ({
   },
 }));
 
+// Mock Supabase
+const mockGetUser = vi.fn();
+vi.mock('@/lib/supabase/server', () => ({
+  createClient: vi.fn(() => ({
+    auth: {
+      getUser: mockGetUser,
+    },
+  })),
+}));
+
 import { getPrompts, createPrompt } from '@/lib/prompt-library';
 
 const mockPrompt = {
@@ -32,12 +42,29 @@ const mockPrompt = {
   updated_at: '2024-01-01T00:00:00Z',
 };
 
+const mockUser = {
+  id: 'user-123',
+  email: 'test@example.com',
+};
+
 describe('GET /api/prompt-library', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it('should return all prompts', async () => {
+  it('should return 401 if user is not authenticated', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: null }, error: null });
+
+    const request = new NextRequest('http://localhost:3000/api/prompt-library');
+    const response = await GET(request);
+    const data = await response.json();
+
+    expect(response.status).toBe(401);
+    expect(data.error).toBe('Unauthorized');
+  });
+
+  it('should return all prompts if authenticated', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: mockUser }, error: null });
     vi.mocked(getPrompts).mockResolvedValue([mockPrompt]);
 
     const request = new NextRequest('http://localhost:3000/api/prompt-library');
@@ -50,6 +77,7 @@ describe('GET /api/prompt-library', () => {
   });
 
   it('should filter by category', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: mockUser }, error: null });
     vi.mocked(getPrompts).mockResolvedValue([mockPrompt]);
 
     const request = new NextRequest('http://localhost:3000/api/prompt-library?category=coding');
@@ -60,6 +88,7 @@ describe('GET /api/prompt-library', () => {
   });
 
   it('should filter by favorites', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: mockUser }, error: null });
     vi.mocked(getPrompts).mockResolvedValue([]);
 
     const request = new NextRequest('http://localhost:3000/api/prompt-library?favorites=true');
@@ -70,6 +99,7 @@ describe('GET /api/prompt-library', () => {
   });
 
   it('should filter by tags', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: mockUser }, error: null });
     vi.mocked(getPrompts).mockResolvedValue([mockPrompt]);
 
     const request = new NextRequest('http://localhost:3000/api/prompt-library?tags=test,example');
@@ -80,6 +110,7 @@ describe('GET /api/prompt-library', () => {
   });
 
   it('should filter by search', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: mockUser }, error: null });
     vi.mocked(getPrompts).mockResolvedValue([mockPrompt]);
 
     const request = new NextRequest('http://localhost:3000/api/prompt-library?search=hello');
@@ -90,6 +121,7 @@ describe('GET /api/prompt-library', () => {
   });
 
   it('should handle multiple filters', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: mockUser }, error: null });
     vi.mocked(getPrompts).mockResolvedValue([mockPrompt]);
 
     const request = new NextRequest(
@@ -106,6 +138,7 @@ describe('GET /api/prompt-library', () => {
   });
 
   it('should return 500 on error', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: mockUser }, error: null });
     vi.mocked(getPrompts).mockRejectedValue(new Error('Database error'));
 
     const request = new NextRequest('http://localhost:3000/api/prompt-library');
@@ -122,7 +155,28 @@ describe('POST /api/prompt-library', () => {
     vi.clearAllMocks();
   });
 
+  it('should return 401 if user is not authenticated', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: null }, error: null });
+
+    const request = new NextRequest('http://localhost:3000/api/prompt-library', {
+      method: 'POST',
+      body: JSON.stringify({
+        title: 'Test Prompt',
+        content: 'Hello {{name}}!',
+        category: 'coding',
+        tags: ['test'],
+      }),
+    });
+
+    const response = await POST(request);
+    const data = await response.json();
+
+    expect(response.status).toBe(401);
+    expect(data.error).toBe('Unauthorized');
+  });
+
   it('should create a prompt with valid data', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: mockUser }, error: null });
     vi.mocked(createPrompt).mockResolvedValue(mockPrompt);
 
     const request = new NextRequest('http://localhost:3000/api/prompt-library', {
@@ -143,6 +197,7 @@ describe('POST /api/prompt-library', () => {
   });
 
   it('should return 400 for missing title', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: mockUser }, error: null });
     const request = new NextRequest('http://localhost:3000/api/prompt-library', {
       method: 'POST',
       body: JSON.stringify({
@@ -159,6 +214,7 @@ describe('POST /api/prompt-library', () => {
   });
 
   it('should return 400 for missing content', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: mockUser }, error: null });
     const request = new NextRequest('http://localhost:3000/api/prompt-library', {
       method: 'POST',
       body: JSON.stringify({
@@ -175,6 +231,7 @@ describe('POST /api/prompt-library', () => {
   });
 
   it('should return 400 for invalid category', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: mockUser }, error: null });
     const request = new NextRequest('http://localhost:3000/api/prompt-library', {
       method: 'POST',
       body: JSON.stringify({
@@ -192,6 +249,7 @@ describe('POST /api/prompt-library', () => {
   });
 
   it('should return 400 for content exceeding max length', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: mockUser }, error: null });
     const longContent = 'a'.repeat(50001);
 
     const request = new NextRequest('http://localhost:3000/api/prompt-library', {
@@ -212,6 +270,7 @@ describe('POST /api/prompt-library', () => {
   });
 
   it('should return 400 for too many tags', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: mockUser }, error: null });
     const tooManyTags = Array.from({ length: 21 }, (_, i) => `tag${i}`);
 
     const request = new NextRequest('http://localhost:3000/api/prompt-library', {
@@ -232,6 +291,7 @@ describe('POST /api/prompt-library', () => {
   });
 
   it('should return 500 when createPrompt fails', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: mockUser }, error: null });
     vi.mocked(createPrompt).mockResolvedValue(null);
 
     const request = new NextRequest('http://localhost:3000/api/prompt-library', {
@@ -251,6 +311,7 @@ describe('POST /api/prompt-library', () => {
   });
 
   it('should accept valid categories', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: mockUser }, error: null });
     const categories = ['coding', 'writing', 'analysis', 'creative', 'other'] as const;
 
     for (const category of categories) {
