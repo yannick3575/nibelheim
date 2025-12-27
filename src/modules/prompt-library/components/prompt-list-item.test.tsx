@@ -100,7 +100,7 @@ describe('PromptListItem', () => {
 
     await waitFor(() => {
       expect(mockWriteText).toHaveBeenCalledWith(mockPrompt.content);
-      expect(toast.success).toHaveBeenCalledWith('Copié dans le presse-papier');
+      expect(toast.success).toHaveBeenCalledWith('Copied to clipboard');
     });
   });
 
@@ -146,7 +146,7 @@ describe('PromptListItem', () => {
     }
 
     await waitFor(() => {
-      expect(toast.success).toHaveBeenCalledWith('Ajouté aux favoris');
+      expect(toast.success).toHaveBeenCalledWith('Added to favorites');
     });
   });
 
@@ -165,7 +165,7 @@ describe('PromptListItem', () => {
     }
 
     await waitFor(() => {
-      expect(toast.error).toHaveBeenCalledWith('Erreur lors de la mise à jour');
+      expect(toast.error).toHaveBeenCalledWith('Error updating favorite status');
     });
   });
 
