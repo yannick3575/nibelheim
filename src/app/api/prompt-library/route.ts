@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getPrompts, createPrompt } from '@/lib/prompt-library';
+import { createClient } from '@/lib/supabase/server';
 import type { PromptCategory, PromptStatus } from '@/lib/prompt-library/types';
 import { logger } from '@/lib/logger';
 
@@ -17,6 +18,15 @@ const createPromptSchema = z.object({
 
 export async function GET(request: NextRequest) {
   try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { searchParams } = new URL(request.url);
 
     const filters: {
@@ -55,6 +65,15 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await request.json();
     const validation = createPromptSchema.safeParse(body);
 
