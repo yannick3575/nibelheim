@@ -15,7 +15,17 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Star, Copy, Pencil, Trash2, Check, MoreVertical, Braces, Sparkles, CheckCircle2 } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Star, Copy, Pencil, Trash2, Check, MoreVertical, Braces, Sparkles, CheckCircle2, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { extractVariables, CATEGORY_COLORS, type Prompt } from '@/lib/prompt-library/types';
 import { toast } from 'sonner';
@@ -40,6 +50,8 @@ export const PromptCard = memo(function PromptCard({ prompt, onDelete, onUpdate 
 
   const [showVariableDialog, setShowVariableDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [copied, setCopied] = useState(false);
 
   // Optimization: Memoize variable extraction to avoid regex parsing on every render
@@ -82,9 +94,8 @@ export const PromptCard = memo(function PromptCard({ prompt, onDelete, onUpdate 
     }
   };
 
-  const handleDelete = async () => {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer ce prompt ?')) return;
-
+  const confirmDelete = async () => {
+    setIsDeleting(true);
     try {
       const response = await fetch(`/api/prompt-library/${prompt.id}`, {
         method: 'DELETE',
@@ -97,6 +108,8 @@ export const PromptCard = memo(function PromptCard({ prompt, onDelete, onUpdate 
     } catch (error) {
       console.error('Error deleting prompt:', error);
       toast.error('Erreur lors de la suppression');
+      setIsDeleting(false);
+      setShowDeleteDialog(false);
     }
   };
 
@@ -197,7 +210,7 @@ export const PromptCard = memo(function PromptCard({ prompt, onDelete, onUpdate 
                     <Pencil className="mr-2 h-4 w-4" />
                     Modifier
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleDelete} className="text-destructive">
+                  <DropdownMenuItem onClick={() => setShowDeleteDialog(true)} className="text-destructive">
                     <Trash2 className="mr-2 h-4 w-4" />
                     Supprimer
                   </DropdownMenuItem>
@@ -238,6 +251,33 @@ export const PromptCard = memo(function PromptCard({ prompt, onDelete, onUpdate 
           prompt={prompt}
           onPromptUpdated={onUpdate}
         />
+      )}
+
+      {showDeleteDialog && (
+        <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Êtes-vous sûr de vouloir supprimer ce prompt ?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Cette action est irréversible. Le prompt &quot;{prompt.title}&quot; sera définitivement supprimé.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={isDeleting}>Annuler</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={(e) => {
+                  e.preventDefault();
+                  confirmDelete();
+                }}
+                disabled={isDeleting}
+                className="bg-destructive hover:bg-destructive/90"
+              >
+                {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                Supprimer
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       )}
     </>
   );
