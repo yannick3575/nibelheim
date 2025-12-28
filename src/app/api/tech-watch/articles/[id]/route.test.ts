@@ -17,11 +17,23 @@ vi.mock('@/lib/logger', () => ({
   },
 }));
 
+// Mock supabase server
+vi.mock('@/lib/supabase/server', () => ({
+  createClient: vi.fn(),
+}));
+
 import { getArticle, toggleArticleRead, toggleArticleFavorite } from '@/lib/tech-watch';
+import { createClient } from '@/lib/supabase/server';
 
 describe('/api/tech-watch/articles/[id]', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Default mock for authenticated user
+    vi.mocked(createClient).mockResolvedValue({
+      auth: {
+        getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'user-123' } } }),
+      },
+    } as any);
   });
 
   const createRequest = (method: string, body?: unknown) => {

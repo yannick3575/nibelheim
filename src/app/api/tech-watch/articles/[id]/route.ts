@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getArticle, toggleArticleRead, toggleArticleFavorite } from '@/lib/tech-watch';
 import { logger } from '@/lib/logger';
+import { createClient } from '@/lib/supabase/server';
 
 interface RouteParams {
     params: Promise<{
@@ -18,6 +19,15 @@ const updateArticleSchema = z.object({
 
 export async function GET(request: NextRequest, { params }: RouteParams) {
     try {
+        const supabase = await createClient();
+        const {
+            data: { user },
+        } = await supabase.auth.getUser();
+
+        if (!user) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
         const { id } = await params;
         const article = await getArticle(id);
 
@@ -40,6 +50,15 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
     try {
+        const supabase = await createClient();
+        const {
+            data: { user },
+        } = await supabase.auth.getUser();
+
+        if (!user) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
         const { id } = await params;
         const body = await request.json();
 
