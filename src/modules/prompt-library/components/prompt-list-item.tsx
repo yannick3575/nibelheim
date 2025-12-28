@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useOptimistic, useTransition, memo } from 'react';
+import { useState, useOptimistic, useTransition, memo, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -41,7 +41,8 @@ export const PromptListItem = memo(function PromptListItem({ prompt, onDelete, o
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  const variables = extractVariables(prompt.content);
+  // Optimization: Memoize variable extraction
+  const variables = useMemo(() => extractVariables(prompt.content), [prompt.content]);
   const hasVariables = variables.length > 0;
 
   const handleToggleFavorite = () => {
@@ -193,18 +194,22 @@ export const PromptListItem = memo(function PromptListItem({ prompt, onDelete, o
         </div>
       </div>
 
-      <VariableDialog
-        open={showVariableDialog}
-        onOpenChange={setShowVariableDialog}
-        prompt={prompt}
-      />
+      {showVariableDialog && (
+        <VariableDialog
+          open={showVariableDialog}
+          onOpenChange={setShowVariableDialog}
+          prompt={prompt}
+        />
+      )}
 
-      <EditPromptDialog
-        open={showEditDialog}
-        onOpenChange={setShowEditDialog}
-        prompt={prompt}
-        onPromptUpdated={onUpdate}
-      />
+      {showEditDialog && (
+        <EditPromptDialog
+          open={showEditDialog}
+          onOpenChange={setShowEditDialog}
+          prompt={prompt}
+          onPromptUpdated={onUpdate}
+        />
+      )}
     </>
   );
 });

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useOptimistic, useTransition, memo } from 'react';
+import { useState, useOptimistic, useTransition, memo, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -42,7 +42,8 @@ export const PromptCard = memo(function PromptCard({ prompt, onDelete, onUpdate 
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  const variables = extractVariables(prompt.content);
+  // Optimization: Memoize variable extraction to avoid regex parsing on every render
+  const variables = useMemo(() => extractVariables(prompt.content), [prompt.content]);
   const hasVariables = variables.length > 0;
 
   const handleToggleFavorite = () => {
@@ -118,6 +119,7 @@ export const PromptCard = memo(function PromptCard({ prompt, onDelete, onUpdate 
     }
   };
 
+  // Optimization: Lazy render dialogs
   return (
     <>
       <Card className={cn("group hover:border-primary/50 transition-colors", prompt.status === 'draft' && "border-orange-500/30 bg-orange-500/5 hover:border-orange-500/50")}>
@@ -221,18 +223,22 @@ export const PromptCard = memo(function PromptCard({ prompt, onDelete, onUpdate 
         </CardContent>
       </Card>
 
-      <VariableDialog
-        open={showVariableDialog}
-        onOpenChange={setShowVariableDialog}
-        prompt={prompt}
-      />
+      {showVariableDialog && (
+        <VariableDialog
+          open={showVariableDialog}
+          onOpenChange={setShowVariableDialog}
+          prompt={prompt}
+        />
+      )}
 
-      <EditPromptDialog
-        open={showEditDialog}
-        onOpenChange={setShowEditDialog}
-        prompt={prompt}
-        onPromptUpdated={onUpdate}
-      />
+      {showEditDialog && (
+        <EditPromptDialog
+          open={showEditDialog}
+          onOpenChange={setShowEditDialog}
+          prompt={prompt}
+          onPromptUpdated={onUpdate}
+        />
+      )}
     </>
   );
 });
