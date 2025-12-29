@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getConversations, createConversation } from '@/lib/stochastic-lab';
+import { createClient } from '@/lib/supabase/server';
 import { logger } from '@/lib/logger';
 
 const createConversationSchema = z.object({
@@ -9,6 +10,15 @@ const createConversationSchema = z.object({
 
 export async function GET() {
   try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const conversations = await getConversations();
 
     const response = NextResponse.json(conversations);
@@ -28,6 +38,15 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await request.json();
     const validation = createConversationSchema.safeParse(body);
 
