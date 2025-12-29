@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getSources, createSource } from '@/lib/tech-watch';
 import { logger } from '@/lib/logger';
+import { createClient } from '@/lib/supabase/server';
 
 /**
  * Schema for creating a new source
@@ -20,6 +21,15 @@ const createSourceSchema = z.object({
 
 export async function GET() {
     try {
+        const supabase = await createClient();
+        const {
+            data: { user },
+        } = await supabase.auth.getUser();
+
+        if (!user) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
         const sources = await getSources();
         return NextResponse.json(sources);
     } catch (error) {
@@ -33,6 +43,15 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
     try {
+        const supabase = await createClient();
+        const {
+            data: { user },
+        } = await supabase.auth.getUser();
+
+        if (!user) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
         const body = await request.json();
 
         // Validate input with Zod
