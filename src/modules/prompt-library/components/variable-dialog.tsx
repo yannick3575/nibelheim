@@ -31,6 +31,7 @@ export function VariableDialog({ open, onOpenChange, prompt }: VariableDialogPro
   // Reset values when dialog opens
   useEffect(() => {
     if (open) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setValues({});
       setCopied(false);
     }
@@ -66,16 +67,24 @@ export function VariableDialog({ open, onOpenChange, prompt }: VariableDialogPro
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-4">
+        {/* Wrap inputs in form to handle Enter key submission */}
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleCopy();
+          }}
+          className="space-y-4 py-4"
+        >
           {/* Variable inputs */}
           <div className="grid gap-4">
-            {variables.map((variable) => (
+            {variables.map((variable, index) => (
               <div key={variable} className="grid gap-2">
                 <Label htmlFor={variable} className="font-mono text-sm">
                   {`{{${variable}}}`}
                 </Label>
                 <Input
                   id={variable}
+                  autoFocus={index === 0}
                   placeholder={`Entrez la valeur pour ${variable}...`}
                   value={values[variable] || ''}
                   onChange={(e) => handleValueChange(variable, e.target.value)}
@@ -91,26 +100,26 @@ export function VariableDialog({ open, onOpenChange, prompt }: VariableDialogPro
               {preview}
             </div>
           </div>
-        </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Annuler
-          </Button>
-          <Button onClick={handleCopy}>
-            {copied ? (
-              <>
-                <Check className="mr-2 h-4 w-4" />
-                Copié !
-              </>
-            ) : (
-              <>
-                <Copy className="mr-2 h-4 w-4" />
-                Copier
-              </>
-            )}
-          </Button>
-        </DialogFooter>
+          <DialogFooter>
+            <Button variant="outline" type="button" onClick={() => onOpenChange(false)}>
+              Annuler
+            </Button>
+            <Button type="submit">
+              {copied ? (
+                <>
+                  <Check className="mr-2 h-4 w-4" />
+                  Copié !
+                </>
+              ) : (
+                <>
+                  <Copy className="mr-2 h-4 w-4" />
+                  Copier
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );
