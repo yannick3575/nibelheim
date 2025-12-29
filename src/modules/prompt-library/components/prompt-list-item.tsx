@@ -14,7 +14,17 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { Star, Copy, Pencil, Trash2, Check, MoreVertical, Braces, Sparkles } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Star, Copy, Pencil, Trash2, Check, MoreVertical, Braces, Sparkles, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { extractVariables, CATEGORY_COLORS, type Prompt } from '@/lib/prompt-library/types';
 import { toast } from 'sonner';
@@ -39,6 +49,8 @@ export const PromptListItem = memo(function PromptListItem({ prompt, onDelete, o
 
   const [showVariableDialog, setShowVariableDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [copied, setCopied] = useState(false);
 
   // Optimization: Memoize variable extraction
@@ -61,11 +73,11 @@ export const PromptListItem = memo(function PromptListItem({ prompt, onDelete, o
 
         const updated = await response.json();
         onUpdate(updated);
-        toast.success(newFavorite ? 'Added to favorites' : 'Removed from favorites');
+        toast.success(newFavorite ? 'Ajouté aux favoris' : 'Retiré des favoris');
       } catch (error) {
         console.error('Error toggling favorite:', error);
         // Reverts to source value when component re-renders
-        toast.error('Error updating favorite status');
+        toast.error('Erreur lors de la mise à jour');
       }
     });
   };
@@ -76,14 +88,13 @@ export const PromptListItem = memo(function PromptListItem({ prompt, onDelete, o
     } else {
       navigator.clipboard.writeText(prompt.content);
       setCopied(true);
-      toast.success('Copied to clipboard');
+      toast.success('Copié dans le presse-papier');
       setTimeout(() => setCopied(false), 2000);
     }
   };
 
-  const handleDelete = async () => {
-    if (!confirm('Are you sure you want to delete this prompt?')) return;
-
+  const confirmDelete = async () => {
+    setIsDeleting(true);
     try {
       const response = await fetch(`/api/prompt-library/${prompt.id}`, {
         method: 'DELETE',
@@ -92,10 +103,12 @@ export const PromptListItem = memo(function PromptListItem({ prompt, onDelete, o
       if (!response.ok) throw new Error('Failed to delete');
 
       onDelete(prompt.id);
-      toast.success('Prompt deleted');
+      toast.success('Prompt supprimé');
     } catch (error) {
       console.error('Error deleting prompt:', error);
-      toast.error('Error deleting prompt');
+      toast.error('Erreur lors de la suppression');
+      setIsDeleting(false);
+      setShowDeleteDialog(false);
     }
   };
 
@@ -111,13 +124,13 @@ export const PromptListItem = memo(function PromptListItem({ prompt, onDelete, o
               className={cn('h-8 w-8 flex-shrink-0', optimisticFavorite && 'text-yellow-500', isPending && 'opacity-70')}
               onClick={handleToggleFavorite}
               disabled={isPending}
-              aria-label={optimisticFavorite ? "Remove from favorites" : "Add to favorites"}
+              aria-label={optimisticFavorite ? "Retirer des favoris" : "Ajouter aux favoris"}
             >
               <Star className={cn('h-4 w-4', optimisticFavorite && 'fill-yellow-500')} />
             </Button>
           </TooltipTrigger>
           <TooltipContent>
-            <p>{optimisticFavorite ? "Remove from favorites" : "Add to favorites"}</p>
+            <p>{optimisticFavorite ? "Retirer des favoris" : "Ajouter aux favoris"}</p>
           </TooltipContent>
         </Tooltip>
 
@@ -128,7 +141,7 @@ export const PromptListItem = memo(function PromptListItem({ prompt, onDelete, o
             {hasVariables && <Braces className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />}
             {prompt.status === 'draft' && (
               <Badge variant="outline" className="text-[10px] h-4 py-0 bg-orange-500/10 text-orange-600 border-orange-500/20">
-                Draft
+                Brouillon
               </Badge>
             )}
             {prompt.is_automated && (
@@ -164,30 +177,30 @@ export const PromptListItem = memo(function PromptListItem({ prompt, onDelete, o
                 variant="outline"
                 size="sm"
                 onClick={handleCopy}
-                aria-label={hasVariables ? 'Fill and copy' : 'Copy'}
+                aria-label={hasVariables ? 'Remplir & copier' : 'Copier'}
               >
                 {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              <p>{hasVariables ? 'Fill and copy' : 'Copy'}</p>
+              <p>{hasVariables ? 'Remplir & copier' : 'Copier'}</p>
             </TooltipContent>
           </Tooltip>
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="More options">
+              <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Plus d'options">
                 <MoreVertical className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={() => setShowEditDialog(true)}>
                 <Pencil className="mr-2 h-4 w-4" />
-                Edit
+                Modifier
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleDelete} className="text-destructive">
+              <DropdownMenuItem onClick={() => setShowDeleteDialog(true)} className="text-destructive">
                 <Trash2 className="mr-2 h-4 w-4" />
-                Delete
+                Supprimer
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -209,6 +222,33 @@ export const PromptListItem = memo(function PromptListItem({ prompt, onDelete, o
           prompt={prompt}
           onPromptUpdated={onUpdate}
         />
+      )}
+
+      {showDeleteDialog && (
+        <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Êtes-vous sûr de vouloir supprimer ce prompt ?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Cette action est irréversible. Le prompt &quot;{prompt.title}&quot; sera définitivement supprimé.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={isDeleting}>Annuler</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={(e) => {
+                  e.preventDefault();
+                  confirmDelete();
+                }}
+                disabled={isDeleting}
+                className="bg-destructive hover:bg-destructive/90"
+              >
+                {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                Supprimer
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       )}
     </>
   );

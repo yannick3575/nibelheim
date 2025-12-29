@@ -19,7 +19,7 @@ Object.defineProperty(navigator, 'clipboard', {
   configurable: true,
 });
 
-// Mock window.confirm
+// Mock window.confirm - No longer needed as we use AlertDialog, but keeping for safety if reused
 const mockConfirm = vi.fn();
 global.confirm = mockConfirm;
 
@@ -90,17 +90,13 @@ describe('PromptListItem', () => {
   it('should copy content to clipboard when clicking copy (no variables)', async () => {
     render(<PromptListItem {...defaultProps} />);
 
-    // Find the copy button (outline variant)
-    const copyIcon = document.querySelector('svg.lucide-copy');
-    const copyButton = copyIcon?.closest('button');
-
-    if (copyButton) {
-      fireEvent.click(copyButton);
-    }
+    // Find the copy button using accessible name
+    const copyButton = screen.getByLabelText('Copier');
+    fireEvent.click(copyButton);
 
     await waitFor(() => {
       expect(mockWriteText).toHaveBeenCalledWith(mockPrompt.content);
-      expect(toast.success).toHaveBeenCalledWith('Copied to clipboard');
+      expect(toast.success).toHaveBeenCalledWith('Copié dans le presse-papier');
     });
   });
 
@@ -112,12 +108,9 @@ describe('PromptListItem', () => {
 
     render(<PromptListItem {...defaultProps} />);
 
-    const starIcon = document.querySelector('svg.lucide-star');
-    const favoriteButton = starIcon?.closest('button');
-
-    if (favoriteButton) {
-      fireEvent.click(favoriteButton);
-    }
+    // Find the favorite button using accessible name
+    const favoriteButton = screen.getByLabelText('Ajouter aux favoris');
+    fireEvent.click(favoriteButton);
 
     await waitFor(() => {
       expect(mockFetch).toHaveBeenCalledWith(
@@ -138,15 +131,11 @@ describe('PromptListItem', () => {
 
     render(<PromptListItem {...defaultProps} />);
 
-    const starIcon = document.querySelector('svg.lucide-star');
-    const favoriteButton = starIcon?.closest('button');
-
-    if (favoriteButton) {
-      fireEvent.click(favoriteButton);
-    }
+    const favoriteButton = screen.getByLabelText('Ajouter aux favoris');
+    fireEvent.click(favoriteButton);
 
     await waitFor(() => {
-      expect(toast.success).toHaveBeenCalledWith('Added to favorites');
+      expect(toast.success).toHaveBeenCalledWith('Ajouté aux favoris');
     });
   });
 
@@ -157,22 +146,18 @@ describe('PromptListItem', () => {
 
     render(<PromptListItem {...defaultProps} />);
 
-    const starIcon = document.querySelector('svg.lucide-star');
-    const favoriteButton = starIcon?.closest('button');
-
-    if (favoriteButton) {
-      fireEvent.click(favoriteButton);
-    }
+    const favoriteButton = screen.getByLabelText('Ajouter aux favoris');
+    fireEvent.click(favoriteButton);
 
     await waitFor(() => {
-      expect(toast.error).toHaveBeenCalledWith('Error updating favorite status');
+      expect(toast.error).toHaveBeenCalledWith('Erreur lors de la mise à jour');
     });
   });
 
   it('should show favorite star filled when is_favorite is true', () => {
     render(<PromptListItem {...defaultProps} prompt={{ ...mockPrompt, is_favorite: true }} />);
-    const starIcon = document.querySelector('svg.lucide-star.fill-yellow-500');
-    expect(starIcon).toBeInTheDocument();
+    // Since we can't easily query by class, we check if the label changed
+    expect(screen.getByLabelText('Retirer des favoris')).toBeInTheDocument();
   });
 
   it('should show variables icon for prompts with variables', () => {
