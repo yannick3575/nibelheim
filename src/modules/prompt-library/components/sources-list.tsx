@@ -199,7 +199,7 @@ export function SourcesList() {
           <Button
             variant="outline"
             onClick={handleDiscoverAll}
-            disabled={discoveringAll || enabledCount === 0}
+            disabled={discoveringAll || stats.enabled === 0}
             className="border-aurora-violet/30 hover:border-aurora-violet/50"
           >
             {discoveringAll ? (
