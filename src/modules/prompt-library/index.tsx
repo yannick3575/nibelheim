@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -130,9 +130,13 @@ export default function PromptLibraryModule() {
     setPrompts((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
   }, []);
 
-  const totalPrompts = prompts.length;
-  const favoriteCount = prompts.filter((p) => p.is_favorite).length;
-  const categoryCount = new Set(prompts.map((p) => p.category)).size;
+  const stats = useMemo(() => {
+    return {
+      total: prompts.length,
+      favorites: prompts.filter((p) => p.is_favorite).length,
+      categories: new Set(prompts.map((p) => p.category)).size
+    };
+  }, [prompts]);
 
   return (
     <div className="space-y-6 h-full flex flex-col">
@@ -212,7 +216,7 @@ export default function PromptLibraryModule() {
             <Card className="border-aurora-magenta/20 hover:border-aurora-magenta/30 transition-colors">
               <CardHeader className="pb-2">
                 <CardDescription>Total</CardDescription>
-                <CardTitle className="text-2xl text-aurora-magenta">{loading ? '-' : totalPrompts}</CardTitle>
+                <CardTitle className="text-2xl text-aurora-magenta">{loading ? '-' : stats.total}</CardTitle>
               </CardHeader>
             </Card>
             <Card className="border-yellow-500/20 hover:border-yellow-500/30 transition-colors">
@@ -220,14 +224,14 @@ export default function PromptLibraryModule() {
                 <CardDescription>Favoris</CardDescription>
                 <CardTitle className="text-2xl flex items-center gap-2">
                   <Star className="h-5 w-5 text-yellow-500 fill-yellow-500" />
-                  {loading ? '-' : favoriteCount}
+                  {loading ? '-' : stats.favorites}
                 </CardTitle>
               </CardHeader>
             </Card>
             <Card className="border-aurora-violet/20 hover:border-aurora-violet/30 transition-colors">
               <CardHeader className="pb-2">
                 <CardDescription>Catégories utilisées</CardDescription>
-                <CardTitle className="text-2xl text-aurora-violet">{loading ? '-' : categoryCount}</CardTitle>
+                <CardTitle className="text-2xl text-aurora-violet">{loading ? '-' : stats.categories}</CardTitle>
               </CardHeader>
             </Card>
           </div>
