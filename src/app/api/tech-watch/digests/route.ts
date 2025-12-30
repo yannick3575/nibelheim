@@ -1,9 +1,19 @@
 import { NextResponse } from 'next/server';
 import { getDigests } from '@/lib/tech-watch';
 import { logger } from '@/lib/logger';
+import { createClient } from '@/lib/supabase/server';
 
 export async function GET() {
     try {
+        const supabase = await createClient();
+        const {
+            data: { user },
+        } = await supabase.auth.getUser();
+
+        if (!user) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
         const digests = await getDigests();
         const response = NextResponse.json(digests);
         // Cache for 5 minutes, allow stale for 1 hour while revalidating

@@ -14,6 +14,16 @@ vi.mock('@/lib/logger', () => ({
   },
 }));
 
+// Mock Supabase
+const mockGetUser = vi.fn();
+vi.mock('@/lib/supabase/server', () => ({
+  createClient: vi.fn(() => ({
+    auth: {
+      getUser: mockGetUser,
+    },
+  })),
+}));
+
 import { getFavoriteArticles } from '@/lib/tech-watch';
 
 describe('/api/tech-watch/favorites', () => {
@@ -22,7 +32,18 @@ describe('/api/tech-watch/favorites', () => {
   });
 
   describe('GET', () => {
+    it('should return 401 if user is not authenticated', async () => {
+      mockGetUser.mockResolvedValue({ data: { user: null }, error: null });
+
+      const response = await GET();
+      const data = await response.json();
+
+      expect(response.status).toBe(401);
+      expect(data.error).toBe('Unauthorized');
+    });
+
     it('should return empty array when no favorites exist', async () => {
+      mockGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } }, error: null });
       vi.mocked(getFavoriteArticles).mockResolvedValue([]);
 
       const response = await GET();
@@ -34,6 +55,7 @@ describe('/api/tech-watch/favorites', () => {
     });
 
     it('should return list of favorite articles', async () => {
+      mockGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } }, error: null });
       const mockFavorites = [
         {
           id: 'article-1',
@@ -79,6 +101,7 @@ describe('/api/tech-watch/favorites', () => {
     });
 
     it('should return 500 on error', async () => {
+      mockGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } }, error: null });
       vi.mocked(getFavoriteArticles).mockRejectedValue(new Error('Database error'));
 
       const response = await GET();
