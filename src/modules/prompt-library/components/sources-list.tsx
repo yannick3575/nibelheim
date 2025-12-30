@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -169,8 +169,12 @@ export function SourcesList() {
     setDialogOpen(true);
   }, []);
 
-  const enabledCount = sources.filter((s) => s.is_enabled).length;
-  const totalPrompts = sources.reduce((sum, s) => sum + s.prompts_extracted, 0);
+  const stats = useMemo(() => {
+    return {
+      enabled: sources.filter((s) => s.is_enabled).length,
+      totalPrompts: sources.reduce((sum, s) => sum + s.prompts_extracted, 0)
+    };
+  }, [sources]);
 
   return (
     <div className="space-y-6">
@@ -195,7 +199,7 @@ export function SourcesList() {
           <Button
             variant="outline"
             onClick={handleDiscoverAll}
-            disabled={discoveringAll || enabledCount === 0}
+            disabled={discoveringAll || stats.enabled === 0}
             className="border-aurora-violet/30 hover:border-aurora-violet/50"
           >
             {discoveringAll ? (
@@ -218,7 +222,7 @@ export function SourcesList() {
           <CardHeader className="pb-2">
             <CardDescription>Sources actives</CardDescription>
             <CardTitle className="text-2xl text-primary">
-              {loading ? '-' : `${enabledCount}/${sources.length}`}
+              {loading ? '-' : `${stats.enabled}/${sources.length}`}
             </CardTitle>
           </CardHeader>
         </Card>
@@ -226,7 +230,7 @@ export function SourcesList() {
           <CardHeader className="pb-2">
             <CardDescription>Prompts extraits</CardDescription>
             <CardTitle className="text-2xl text-aurora-violet">
-              {loading ? '-' : totalPrompts}
+              {loading ? '-' : stats.totalPrompts}
             </CardTitle>
           </CardHeader>
         </Card>
