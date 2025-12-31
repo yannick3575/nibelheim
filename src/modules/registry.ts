@@ -1,11 +1,12 @@
 import { lazy } from 'react';
-import { Rss, FlaskConical, BookText, Activity } from 'lucide-react';
+import { Rss, FlaskConical, BookText, Activity, Inbox } from 'lucide-react';
 import { ModuleConfig, ModuleRegistry } from '@/types/modules';
 
 // Lazy load module components
 const TechWatchModule = lazy(() => import('./tech-watch'));
 const PromptLibraryModule = lazy(() => import('./prompt-library'));
 const StochasticLabModule = lazy(() => import('./stochastic-lab'));
+const AIInboxModule = lazy(() => import('./ai-inbox'));
 const TemplateModule = lazy(() => import('./_template'));
 
 // Module definitions
@@ -42,6 +43,17 @@ const modules: ModuleConfig[] = [
         component: StochasticLabModule,
         category: 'ai',
         tags: ['ai', 'statistics', 'probability', 'simulation', 'monte-carlo', 'markov'],
+    },
+    {
+        id: 'ai-inbox',
+        name: 'AI Inbox',
+        description: 'Inbox personnalisée avec analyse IA pour contenus tech (YouTube, Substack, articles)',
+        icon: Inbox,
+        route: '/ai-inbox',
+        enabled: true,
+        component: AIInboxModule,
+        category: 'ai',
+        tags: ['ai', 'inbox', 'curation', 'gemini', 'analysis'],
     },
     // Template module - disabled by default, for development reference
     {
