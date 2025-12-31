@@ -14,6 +14,16 @@ vi.mock('@/lib/logger', () => ({
   },
 }));
 
+// Mock Supabase
+const mockGetUser = vi.fn();
+vi.mock('@/lib/supabase/server', () => ({
+  createClient: vi.fn(() => ({
+    auth: {
+      getUser: mockGetUser,
+    },
+  })),
+}));
+
 import { getDigests } from '@/lib/tech-watch';
 
 describe('GET /api/tech-watch/digests', () => {
@@ -21,7 +31,18 @@ describe('GET /api/tech-watch/digests', () => {
     vi.clearAllMocks();
   });
 
+  it('should return 401 if user is not authenticated', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: null }, error: null });
+
+    const response = await GET();
+    const data = await response.json();
+
+    expect(response.status).toBe(401);
+    expect(data.error).toBe('Unauthorized');
+  });
+
   it('should return list of digests', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } }, error: null });
     const mockDigests = [
       {
         id: 'digest-1',
@@ -46,6 +67,7 @@ describe('GET /api/tech-watch/digests', () => {
   });
 
   it('should return empty array when no digests', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } }, error: null });
     vi.mocked(getDigests).mockResolvedValue([]);
 
     const response = await GET();
@@ -56,6 +78,7 @@ describe('GET /api/tech-watch/digests', () => {
   });
 
   it('should return 500 on error', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } }, error: null });
     vi.mocked(getDigests).mockRejectedValue(new Error('Database error'));
 
     const response = await GET();
