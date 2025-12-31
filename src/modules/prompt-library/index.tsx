@@ -286,7 +286,18 @@ export default function PromptLibraryModule() {
                       ? 'Aucun prompt ne correspond aux filtres.'
                       : 'Aucun prompt enregistré. Créez votre premier prompt !'}
                   </p>
-                  {!searchQuery && selectedCategory === 'all' && !showFavoritesOnly && (
+                  {(searchQuery || selectedCategory !== 'all' || showFavoritesOnly) ? (
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setSearchQuery('');
+                        setSelectedCategory('all');
+                        setShowFavoritesOnly(false);
+                      }}
+                    >
+                      Réinitialiser les filtres
+                    </Button>
+                  ) : (
                     <Button onClick={() => setCreateDialogOpen(true)}>
                       <Plus className="mr-2 h-4 w-4" />
                       Créer un prompt
