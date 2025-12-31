@@ -155,7 +155,14 @@ export default function AIInboxModule() {
 
     if (!response.ok) throw new Error('Failed to analyze item');
 
-    // TODO: Update local state with analysis when implemented
+    const data = await response.json();
+
+    // Update local state with analysis results
+    setItems((prev) =>
+      prev.map((item) =>
+        item.id === id ? { ...item, ai_analysis: data.analysis } : item
+      )
+    );
   }, []);
 
   const handleItemCreated = useCallback((item: Item) => {
