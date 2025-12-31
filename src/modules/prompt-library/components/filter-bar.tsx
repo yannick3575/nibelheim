@@ -1,5 +1,6 @@
 'use client';
 
+import { memo } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -15,7 +16,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { Search, Star, X, FileEdit, CheckCircle2, Archive } from 'lucide-react';
+import { Search, Star, X, FileEdit, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { PROMPT_CATEGORIES, type PromptCategory, type PromptStatus } from '@/lib/prompt-library/types';
 
@@ -33,7 +34,8 @@ interface FilterBarProps {
   draftCount?: number;
 }
 
-export function FilterBar({
+// Optimization: Memoized to prevent re-renders when unrelated parent state changes
+export const FilterBar = memo(function FilterBar({
   selectedCategory,
   onCategoryChange,
   showFavoritesOnly,
@@ -168,4 +170,4 @@ export function FilterBar({
       </div>
     </div>
   );
-}
+});
