@@ -6,10 +6,9 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BookText, Plus, Grid3x3, List, Star, Loader2, Sparkles, Database } from 'lucide-react';
-import { PromptCard } from './components/prompt-card';
-import { PromptListItem } from './components/prompt-list-item';
 import { CreatePromptDialog } from './components/create-prompt-dialog';
 import { FilterBar } from './components/filter-bar';
+import { PromptList } from './components/prompt-list';
 import { SourcesList } from './components/sources-list';
 import type { Prompt, PromptCategory, PromptStatus } from '@/lib/prompt-library/types';
 import { toast } from 'sonner';
@@ -305,28 +304,13 @@ export default function PromptLibraryModule() {
                   )}
                 </CardContent>
               </Card>
-            ) : viewMode === 'cards' ? (
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {prompts.map((prompt) => (
-                  <PromptCard
-                    key={prompt.id}
-                    prompt={prompt}
-                    onDelete={handlePromptDeleted}
-                    onUpdate={handlePromptUpdated}
-                  />
-                ))}
-              </div>
             ) : (
-              <div className="space-y-2">
-                {prompts.map((prompt) => (
-                  <PromptListItem
-                    key={prompt.id}
-                    prompt={prompt}
-                    onDelete={handlePromptDeleted}
-                    onUpdate={handlePromptUpdated}
-                  />
-                ))}
-              </div>
+              <PromptList
+                prompts={prompts}
+                viewMode={viewMode}
+                onDelete={handlePromptDeleted}
+                onUpdate={handlePromptUpdated}
+              />
             )}
           </div>
         </TabsContent>
