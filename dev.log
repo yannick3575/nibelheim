@@ -1,16 +1,451 @@
 
-> nibelheim@0.1.0 dev
+> nibelheim@0.1.0 dev /app
 > next dev
 
    ▲ Next.js 16.0.10 (Turbopack)
    - Local:         http://localhost:3000
-   - Network:       http://192.168.1.63:3000
-   - Environments: .env.local
+   - Network:       http://192.168.0.2:3000
 
  ✓ Starting...
  ⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
- ✓ Ready in 713ms
- GET / 200 in 3.5s (compile: 2.8s, proxy.ts: 306ms, render: 458ms)
- GET /prompt-library 200 in 1375ms (compile: 1234ms, proxy.ts: 117ms, render: 24ms)
- GET /api/prompt-library? 200 in 579ms (compile: 389ms, proxy.ts: 80ms, render: 110ms)
- GET /api/prompt-library? 200 in 149ms (compile: 4ms, proxy.ts: 66ms, render: 80ms)
+Sentry Logger [log]: Initializing SDK...
+Sentry Logger [log]: Initializing Sentry: process: 5140, thread: main.
+Sentry Logger [warn]: No DSN provided, client will not send events.
+Sentry Logger [log]: Cleared AI provider skip registrations
+Sentry Logger [log]: Integration installed: InboundFilters
+Sentry Logger [log]: Integration installed: FunctionToString
+Sentry Logger [log]: Integration installed: LinkedErrors
+Sentry Logger [log]: Integration installed: RequestData
+Sentry Logger [log]: Integration installed: NodeSystemError
+Sentry Logger [log]: Integration installed: Console
+Sentry Logger [log]: Integration installed: OnUncaughtException
+Sentry Logger [log]: Integration installed: OnUnhandledRejection
+Sentry Logger [log]: Integration installed: ContextLines
+Sentry Logger [log]: Integration installed: LocalVariablesAsync
+Sentry Logger [log]: Integration installed: Context
+Sentry Logger [log]: Integration installed: ChildProcess
+Sentry Logger [log]: Integration installed: ProcessSession
+Sentry Logger [log]: Integration installed: Modules
+Sentry Logger [log]: Integration installed: NodeFetch
+Sentry Logger [log]: Integration installed: Express
+Sentry Logger [log]: Integration installed: Fastify
+Sentry Logger [log]: Integration installed: Graphql
+Sentry Logger [log]: Integration installed: Hono
+Sentry Logger [log]: Integration installed: Mongo
+Sentry Logger [log]: Integration installed: Mongoose
+Sentry Logger [log]: Integration installed: Mysql
+Sentry Logger [log]: Integration installed: Mysql2
+Sentry Logger [log]: Integration installed: Redis
+Sentry Logger [log]: Integration installed: Postgres
+Sentry Logger [log]: Integration installed: Prisma
+Sentry Logger [log]: Integration installed: Hapi
+Sentry Logger [log]: Integration installed: Koa
+Sentry Logger [log]: Integration installed: Connect
+Sentry Logger [log]: Integration installed: Tedious
+Sentry Logger [log]: Integration installed: GenericPool
+Sentry Logger [log]: Integration installed: Kafka
+Sentry Logger [log]: Integration installed: Amqplib
+Sentry Logger [log]: Integration installed: LruMemoizer
+Sentry Logger [log]: Integration installed: LangChain
+Sentry Logger [log]: Integration installed: LangGraph
+Sentry Logger [log]: Integration installed: VercelAI
+Sentry Logger [log]: Integration installed: OpenAI
+Sentry Logger [log]: Integration installed: Anthropic_AI
+Sentry Logger [log]: Integration installed: Google_GenAI
+Sentry Logger [log]: Integration installed: PostgresJs
+Sentry Logger [log]: Integration installed: Firebase
+Sentry Logger [log]: Integration installed: Http
+Sentry Logger [log]: Integration installed: Spotlight
+Sentry Logger [log]: SDK initialized from CommonJS
+Sentry Logger [log]: @opentelemetry/api: Registered a global for diag v1.9.0.
+Sentry Logger [log]: @opentelemetry/api: Registered a global for trace v1.9.0.
+Sentry Logger [log]: @opentelemetry/api: Registered a global for propagation v1.9.0.
+Sentry Logger [log]: @opentelemetry/api: Registered a global for context v1.9.0.
+Sentry Logger [log]: SDK successfully initialized
+Sentry Logger [log]: Recording is off, propagating context in a non-recording span
+Sentry Logger [log]: Recording is off, propagating context in a non-recording span
+ ✓ Ready in 6.7s
+Sentry Logger [log]: Http.Server Handling incoming request
+Sentry Logger [log]: Http.Server Patching request.on
+Sentry Logger [log]: [Tracing] Starting sampled root span
+  op: http.server
+  name: GET /prompt-library
+  ID: 17cf822b9392c7f8
+Sentry Logger [log]: [Tracing] Inheriting parent's sampled decision for GET: true
+Sentry Logger [log]: [Tracing] Starting sampled span
+  op: < unknown op >
+  name: GET
+  ID: e2d42b1cbf2e93f4
+  parent ID: 17cf822b9392c7f8
+  root ID: 17cf822b9392c7f8
+  root op: http.server
+  root description: GET /prompt-library
+ ⨯ Error: Your project's URL and Key are required to create a Supabase client!
+
+Check your Supabase project's API settings to find these values
+
+https://supabase.com/dashboard/project/_/settings/api
+    at <unknown> (https://supabase.com/dashboard/project/_/settings/api)
+    at <unknown> (https://supabase.com/dashboard/project/_/settings/api)
+    at updateSession (src/lib/supabase/middleware.ts:9:40)
+    at middleware (src/middleware.ts:5:31)
+   7 |     });
+   8 |
+>  9 |     const supabase = createServerClient(
+     |                                        ^
+  10 |         process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  11 |         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  12 |         {
+ ⚠ ./node_modules/.pnpm/@opentelemetry+instrumentation@0.208.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node
+Package import-in-the-middle can't be external
+The request import-in-the-middle matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the project directory.
+Packages that should be external need to be installed in the project directory, so they can be resolved from the output files.
+Try to install it into the project directory by running npm install import-in-the-middle from the project directory.
+
+
+ ⚠ ./node_modules/.pnpm/@sentry+node-core@10.32.1_@opentelemetry+api@1.9.0_@opentelemetry+context-async-hooks@2_3f27759e473978b8c6a71fc60e33c207/node_modules/@sentry/node-core/build/cjs/sdk
+Package import-in-the-middle can't be external
+The request import-in-the-middle matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the project directory.
+Packages that should be external need to be installed in the project directory, so they can be resolved from the output files.
+Try to install it into the project directory by running npm install import-in-the-middle from the project directory.
+
+
+ ⚠ ./node_modules/.pnpm/@opentelemetry+instrumentation@0.208.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node
+Package require-in-the-middle can't be external
+The request require-in-the-middle matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the project directory.
+Packages that should be external need to be installed in the project directory, so they can be resolved from the output files.
+Try to install it into the project directory by running npm install require-in-the-middle from the project directory.
+
+
+Sentry Logger [log]: [Tracing] Inheriting parent's sampled decision for resolve page components: true
+Sentry Logger [log]: [Tracing] Starting sampled span
+  op: < unknown op >
+  name: resolve page components
+  ID: 18279a579f6c8edd
+  parent ID: e2d42b1cbf2e93f4
+  root ID: 17cf822b9392c7f8
+  root op: http.server
+  root description: GET /prompt-library
+Sentry Logger [log]: [Tracing] Finishing "< unknown op >" span "resolve page components" with ID 18279a579f6c8edd
+Sentry Logger [log]: [Tracing] Inheriting parent's sampled decision for render route (pages) /_error: true
+Sentry Logger [log]: [Tracing] Starting sampled span
+  op: < unknown op >
+  name: render route (pages) /_error
+  ID: 749feb7fc94e5c5a
+  parent ID: e2d42b1cbf2e93f4
+  root ID: 17cf822b9392c7f8
+  root op: http.server
+  root description: /_error
+Sentry Logger [log]: [Tracing] Finishing "< unknown op >" span "render route (pages) /_error" with ID 749feb7fc94e5c5a
+Sentry Logger [log]: [Tracing] Finishing "< unknown op >" span "GET /_error" with ID e2d42b1cbf2e93f4
+Sentry Logger [log]: [Tracing] Inheriting parent's sampled decision for GET: true
+Sentry Logger [log]: [Tracing] Starting sampled span
+  op: < unknown op >
+  name: GET
+  ID: d89d7f808299d93d
+  parent ID: 17cf822b9392c7f8
+  root ID: 17cf822b9392c7f8
+  root op: http.server
+  root description: /_error
+Sentry Logger [log]: Recorded request session with status: ok
+Sentry Logger [log]: Opened new request session aggregate.
+Sentry Logger [log]: [Tracing] Finishing "http.server" root span "/_error" with ID 17cf822b9392c7f8
+ GET /prompt-library 404 in 1982ms (compile: -159296µs, proxy.ts: 1972ms, render: 169ms)
+Sentry Logger [log]: SpanExporter exported 4 spans, 0 spans are waiting for their parent spans to finish
+Sentry Logger [log]: Http.Server Handling incoming request
+Sentry Logger [log]: Http.Server Patching request.on
+Sentry Logger [log]: Http.ServerSpans Skipping span creation for incoming request /_next/static/chunks/0f9f0_next_dist_compiled_b85725ed._.js
+Sentry Logger [log]: Http.Server Handling incoming request
+Sentry Logger [log]: Http.Server Patching request.on
+Sentry Logger [log]: Http.ServerSpans Skipping span creation for incoming request /_next/static/chunks/0f9f0_next_dist_shared_lib_74f5e355._.js
+Sentry Logger [log]: Dropping transaction due to status code 404
+Sentry Logger [log]: Event processor "Http" dropped event
+Sentry Logger [log]: Recording outcome: "event_processor:transaction"
+Sentry Logger [log]: An event processor returned `null`, will not send event.
+Sentry Logger [log]: Http.Server Handling incoming request
+Sentry Logger [log]: Http.Server Patching request.on
+Sentry Logger [log]: Http.ServerSpans Skipping span creation for incoming request /_next/static/chunks/0f9f0_next_dist_client_eb0b3d01._.js
+Sentry Logger [log]: Http.Server Handling incoming request
+Sentry Logger [log]: Http.Server Patching request.on
+Sentry Logger [log]: Http.ServerSpans Skipping span creation for incoming request /_next/static/chunks/0f9f0_next_dist_1a833d3e._.js
+Sentry Logger [log]: Http.Server Handling incoming request
+Sentry Logger [log]: Http.Server Patching request.on
+Sentry Logger [log]: Http.ServerSpans Skipping span creation for incoming request /_next/static/chunks/0f9f0_next_app_dfe66efe.js
+Sentry Logger [log]: Http.Server Handling incoming request
+Sentry Logger [log]: Http.Server Patching request.on
+Sentry Logger [log]: Http.ServerSpans Skipping span creation for incoming request /_next/static/chunks/%5Bnext%5D_entry_page-loader_ts_b5f3b2f5._.js
+Sentry Logger [log]: Recorded request session with status: ok
+Sentry Logger [log]: Http.Server Handling incoming request
+Sentry Logger [log]: Http.Server Patching request.on
+Sentry Logger [log]: Http.ServerSpans Skipping span creation for incoming request /_next/static/chunks/5e54f_react-dom_4d21b075._.js
+Sentry Logger [log]: Recorded request session with status: ok
+Sentry Logger [log]: Http.Server Handling incoming request
+Sentry Logger [log]: Http.Server Patching request.on
+Sentry Logger [log]: Http.ServerSpans Skipping span creation for incoming request /_next/static/chunks/node_modules__pnpm_fd60bec7._.js
+Sentry Logger [log]: Recorded request session with status: ok
+Sentry Logger [log]: Recorded request session with status: ok
+Sentry Logger [log]: Http.Server Handling incoming request
+Sentry Logger [log]: Http.Server Patching request.on
+Sentry Logger [log]: Http.ServerSpans Skipping span creation for incoming request /_next/static/chunks/%5Broot-of-the-server%5D__45f039c3._.js
+Sentry Logger [log]: Http.Server Handling incoming request
+Sentry Logger [log]: Http.Server Patching request.on
+Sentry Logger [log]: Http.ServerSpans Skipping span creation for incoming request /_next/static/chunks/pages__app_2da965e7._.js
+Sentry Logger [log]: Recorded request session with status: ok
+Sentry Logger [log]: Http.Server Handling incoming request
+Sentry Logger [log]: Http.Server Patching request.on
+Sentry Logger [log]: Http.ServerSpans Skipping span creation for incoming request /_next/static/chunks/turbopack-pages__app_e8e74a4a._.js
+Sentry Logger [log]: Recorded request session with status: ok
+Sentry Logger [log]: Recorded request session with status: ok
+Sentry Logger [log]: Http.Server Handling incoming request
+Sentry Logger [log]: Http.Server Patching request.on
+Sentry Logger [log]: Http.ServerSpans Skipping span creation for incoming request /_next/static/chunks/0f9f0_next_dist_shared_lib_2ded844b._.js
+Sentry Logger [log]: Recorded request session with status: ok
+Sentry Logger [log]: Http.Server Handling incoming request
+Sentry Logger [log]: Http.Server Patching request.on
+Sentry Logger [log]: Http.ServerSpans Skipping span creation for incoming request /_next/static/chunks/0f9f0_next_dist_2bbb7979._.js
+Sentry Logger [log]: Http.Server Handling incoming request
+Sentry Logger [log]: Http.Server Patching request.on
+Sentry Logger [log]: Http.ServerSpans Skipping span creation for incoming request /_next/static/chunks/0f9f0_next_error_31322081.js
+Sentry Logger [log]: Recorded request session with status: ok
+Sentry Logger [log]: Http.Server Handling incoming request
+Sentry Logger [log]: Http.Server Patching request.on
+Sentry Logger [log]: Http.ServerSpans Skipping span creation for incoming request /_next/static/chunks/%5Bnext%5D_entry_page-loader_ts_eb1a4d4e._.js
+Sentry Logger [log]: Recorded request session with status: ok
+Sentry Logger [log]: Http.Server Handling incoming request
+Sentry Logger [log]: Http.Server Patching request.on
+Sentry Logger [log]: Http.ServerSpans Skipping span creation for incoming request /_next/static/chunks/%5Broot-of-the-server%5D__092393de._.js
+Sentry Logger [log]: Recorded request session with status: ok
+Sentry Logger [log]: Http.Server Handling incoming request
+Sentry Logger [log]: Http.Server Patching request.on
+Sentry Logger [log]: Http.ServerSpans Skipping span creation for incoming request /_next/static/chunks/pages__error_2da965e7._.js
+Sentry Logger [log]: Recorded request session with status: ok
+Sentry Logger [log]: Recorded request session with status: ok
+Sentry Logger [log]: Recorded request session with status: ok
+Sentry Logger [log]: Recorded request session with status: ok
+Sentry Logger [log]: Http.Server Handling incoming request
+Sentry Logger [log]: Http.Server Patching request.on
+Sentry Logger [log]: Http.ServerSpans Skipping span creation for incoming request /_next/static/chunks/turbopack-pages__error_314f1bb9._.js
+Sentry Logger [log]: Http.Server Handling incoming request
+Sentry Logger [log]: Http.Server Patching request.on
+Sentry Logger [log]: Http.ServerSpans Skipping span creation for incoming request /_next/static/development/_ssgManifest.js
+Sentry Logger [log]: Http.Server Handling incoming request
+Sentry Logger [log]: Http.Server Patching request.on
+Sentry Logger [log]: Http.ServerSpans Skipping span creation for incoming request /_next/static/development/_buildManifest.js
+Sentry Logger [log]: Recorded request session with status: ok
+Sentry Logger [log]: Recorded request session with status: ok
+Sentry Logger [log]: Recorded request session with status: ok
+Sentry Logger [log]: Recorded request session with status: ok
+Sentry Logger [log]: Recorded request session with status: ok
+Sentry Logger [log]: Http.Server Handling incoming request
+Sentry Logger [log]: Http.Server Patching request.on
+Sentry Logger [log]: [Tracing] Starting sampled root span
+  op: http.server
+  name: GET /_next/static/development/_devMiddlewareManifest.json
+  ID: 92da97350225e118
+Sentry Logger [log]: Recorded request session with status: ok
+Sentry Logger [log]: [Tracing] Finishing "http.server" root span "GET /_next/static/development/_devMiddlewareManifest.json" with ID 92da97350225e118
+Sentry Logger [log]: Recording is off, propagating context in a non-recording span
+Sentry Logger [log]: SpanExporter exported 1 spans, 0 spans are waiting for their parent spans to finish
+Sentry Logger [log]: Event processor "NextLowQualityTransactionsFilter" dropped event
+Sentry Logger [log]: Recording outcome: "event_processor:transaction"
+Sentry Logger [log]: An event processor returned `null`, will not send event.
+Sentry Logger [log]: Http.Server Handling incoming request
+Sentry Logger [log]: Http.Server Patching request.on
+Sentry Logger [log]: [Tracing] Starting sampled root span
+  op: http.server
+  name: POST /__nextjs_original-stack-frames
+  ID: dd98aa05a2a2fd43
+Sentry Logger [log]: Http.Server Handling request.on("data") with maximum body size of 10000b
+Sentry Logger [log]: Recorded request session with status: ok
+Sentry Logger [log]: [Tracing] Finishing "http.server" root span "POST /__nextjs_original-stack-frames" with ID dd98aa05a2a2fd43
+Sentry Logger [log]: SpanExporter exported 1 spans, 0 spans are waiting for their parent spans to finish
+Sentry Logger [log]: Event processor "NextLowQualityTransactionsFilter" dropped event
+Sentry Logger [log]: Recording outcome: "event_processor:transaction"
+Sentry Logger [log]: An event processor returned `null`, will not send event.
+Sentry Logger [log]: Http.Server Handling incoming request
+Sentry Logger [log]: Http.Server Patching request.on
+Sentry Logger [log]: Http.ServerSpans Skipping span creation for incoming request /__nextjs_font/geist-latin.woff2
+Sentry Logger [log]: Http.Server Handling incoming request
+Sentry Logger [log]: Http.Server Patching request.on
+Sentry Logger [log]: Http.ServerSpans Skipping span creation for incoming request /__nextjs_font/geist-mono-latin.woff2
+Sentry Logger [log]: Recorded request session with status: ok
+Sentry Logger [log]: Recorded request session with status: ok
+ ○ Compiling /_not-found/page ...
+ ⚠ ./node_modules/.pnpm/@opentelemetry+instrumentation@0.208.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node
+Package import-in-the-middle can't be external
+The request import-in-the-middle matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the project directory.
+Packages that should be external need to be installed in the project directory, so they can be resolved from the output files.
+Try to install it into the project directory by running npm install import-in-the-middle from the project directory.
+
+
+ ⚠ ./node_modules/.pnpm/@sentry+node-core@10.32.1_@opentelemetry+api@1.9.0_@opentelemetry+context-async-hooks@2_3f27759e473978b8c6a71fc60e33c207/node_modules/@sentry/node-core/build/cjs/sdk
+Package import-in-the-middle can't be external
+The request import-in-the-middle matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the project directory.
+Packages that should be external need to be installed in the project directory, so they can be resolved from the output files.
+Try to install it into the project directory by running npm install import-in-the-middle from the project directory.
+
+
+ ⚠ ./node_modules/.pnpm/@opentelemetry+instrumentation@0.208.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node
+Package require-in-the-middle can't be external
+The request require-in-the-middle matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the project directory.
+Packages that should be external need to be installed in the project directory, so they can be resolved from the output files.
+Try to install it into the project directory by running npm install require-in-the-middle from the project directory.
+
+
+Sentry Logger [log]: [Tracing] Inheriting parent's sampled decision for resolve page components: true
+Sentry Logger [log]: [Tracing] Starting sampled span
+  op: < unknown op >
+  name: resolve page components
+  ID: feafb37bae129626
+  parent ID: d89d7f808299d93d
+  root ID: 17cf822b9392c7f8
+  root op: http.server
+  root description: /_error
+Sentry Logger [log]: [Tracing] Finishing "< unknown op >" span "resolve page components" with ID feafb37bae129626
+Sentry Logger [log]: [Tracing] Inheriting parent's sampled decision for render route (app) /_not-found: true
+Sentry Logger [log]: [Tracing] Starting sampled span
+  op: < unknown op >
+  name: render route (app) /_not-found
+  ID: e2f54a8f2830ee4c
+  parent ID: d89d7f808299d93d
+  root ID: 17cf822b9392c7f8
+  root op: http.server
+  root description: /_error
+Sentry Logger [log]: [Tracing] Inheriting parent's sampled decision for build component tree: true
+Sentry Logger [log]: [Tracing] Starting sampled span
+  op: < unknown op >
+  name: build component tree
+  ID: 514b3c7ec03f032d
+  parent ID: e2f54a8f2830ee4c
+  root ID: 17cf822b9392c7f8
+  root op: http.server
+  root description: /_error
+Sentry Logger [log]: [Tracing] Inheriting parent's sampled decision for resolve segment modules: true
+Sentry Logger [log]: [Tracing] Starting sampled span
+  op: < unknown op >
+  name: resolve segment modules
+  ID: 28627f9819a3a97c
+  parent ID: 514b3c7ec03f032d
+  root ID: 17cf822b9392c7f8
+  root op: http.server
+  root description: /_error
+Sentry Logger [log]: [Tracing] Finishing "function.nextjs" span "resolve root layout server component" with ID 28627f9819a3a97c
+Sentry Logger [log]: [Tracing] Inheriting parent's sampled decision for resolve segment modules: true
+Sentry Logger [log]: [Tracing] Starting sampled span
+  op: < unknown op >
+  name: resolve segment modules
+  ID: 27a083920201573b
+  parent ID: 514b3c7ec03f032d
+  root ID: 17cf822b9392c7f8
+  root op: http.server
+  root description: /_error
+Sentry Logger [log]: [Tracing] Finishing "function.nextjs" span "resolve page server component "/_error"" with ID 27a083920201573b
+Sentry Logger [log]: [Tracing] Finishing "< unknown op >" span "build component tree" with ID 514b3c7ec03f032d
+Sentry Logger [log]: @sentry/instrumentation-http Applying instrumentation patch for nodejs core module on require hook { module: 'http' }
+Sentry Logger [log]: @opentelemetry_sentry-patched/instrumentation-http Applying instrumentation patch for nodejs core module on require hook { module: 'http' }
+Sentry Logger [log]: @sentry/instrumentation-http Applying instrumentation patch for nodejs core module on require hook { module: 'https' }
+Sentry Logger [log]: @opentelemetry_sentry-patched/instrumentation-http Applying instrumentation patch for nodejs core module on require hook { module: 'https' }
+Sentry Logger [log]: [Tracing] Finishing "< unknown op >" span "render route (app) /_not-found" with ID e2f54a8f2830ee4c
+Sentry Logger [log]: [Tracing] Finishing "< unknown op >" span "GET /_not-found" with ID d89d7f808299d93d
+Sentry Logger [log]: SpanExporter exported 6 spans, 0 spans are waiting for their parent spans to finish
+Sentry Logger [log]: Dropping transaction due to status code 404
+Sentry Logger [log]: Event processor "Http" dropped event
+Sentry Logger [log]: Recording outcome: "event_processor:transaction"
+Sentry Logger [log]: An event processor returned `null`, will not send event.
+Sentry Logger [log]: Http.Server Handling incoming request
+Sentry Logger [log]: Http.Server Patching request.on
+Sentry Logger [log]: [Tracing] Starting sampled root span
+  op: http.server
+  name: GET /prompt-library
+  ID: d29d97b507b397fa
+Sentry Logger [log]: [Tracing] Inheriting parent's sampled decision for GET: true
+Sentry Logger [log]: [Tracing] Starting sampled span
+  op: < unknown op >
+  name: GET
+  ID: 266278e5d0c03ae0
+  parent ID: d29d97b507b397fa
+  root ID: d29d97b507b397fa
+  root op: http.server
+  root description: GET /prompt-library
+ ⨯ Error: Your project's URL and Key are required to create a Supabase client!
+
+Check your Supabase project's API settings to find these values
+
+https://supabase.com/dashboard/project/_/settings/api
+    at <unknown> (https://supabase.com/dashboard/project/_/settings/api)
+    at <unknown> (https://supabase.com/dashboard/project/_/settings/api)
+    at updateSession (src/lib/supabase/middleware.ts:9:40)
+    at middleware (src/middleware.ts:5:31)
+   7 |     });
+   8 |
+>  9 |     const supabase = createServerClient(
+     |                                        ^
+  10 |         process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  11 |         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  12 |         {
+ ⚠ ./node_modules/.pnpm/@opentelemetry+instrumentation@0.208.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node
+Package import-in-the-middle can't be external
+The request import-in-the-middle matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the project directory.
+Packages that should be external need to be installed in the project directory, so they can be resolved from the output files.
+Try to install it into the project directory by running npm install import-in-the-middle from the project directory.
+
+
+ ⚠ ./node_modules/.pnpm/@sentry+node-core@10.32.1_@opentelemetry+api@1.9.0_@opentelemetry+context-async-hooks@2_3f27759e473978b8c6a71fc60e33c207/node_modules/@sentry/node-core/build/cjs/sdk
+Package import-in-the-middle can't be external
+The request import-in-the-middle matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the project directory.
+Packages that should be external need to be installed in the project directory, so they can be resolved from the output files.
+Try to install it into the project directory by running npm install import-in-the-middle from the project directory.
+
+
+ ⚠ ./node_modules/.pnpm/@opentelemetry+instrumentation@0.208.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node
+Package require-in-the-middle can't be external
+The request require-in-the-middle matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the project directory.
+Packages that should be external need to be installed in the project directory, so they can be resolved from the output files.
+Try to install it into the project directory by running npm install require-in-the-middle from the project directory.
+
+
+Sentry Logger [log]: [Tracing] Inheriting parent's sampled decision for resolve page components: true
+Sentry Logger [log]: [Tracing] Starting sampled span
+  op: < unknown op >
+  name: resolve page components
+  ID: 01791c61174d3948
+  parent ID: 266278e5d0c03ae0
+  root ID: d29d97b507b397fa
+  root op: http.server
+  root description: GET /prompt-library
+Sentry Logger [log]: [Tracing] Finishing "< unknown op >" span "resolve page components" with ID 01791c61174d3948
+Sentry Logger [log]: [Tracing] Inheriting parent's sampled decision for render route (pages) /_error: true
+Sentry Logger [log]: [Tracing] Starting sampled span
+  op: < unknown op >
+  name: render route (pages) /_error
+  ID: e469a3114cfa1830
+  parent ID: 266278e5d0c03ae0
+  root ID: d29d97b507b397fa
+  root op: http.server
+  root description: /_error
+Sentry Logger [log]: [Tracing] Finishing "< unknown op >" span "render route (pages) /_error" with ID e469a3114cfa1830
+Sentry Logger [log]: [Tracing] Finishing "< unknown op >" span "GET /_error" with ID 266278e5d0c03ae0
+Sentry Logger [log]: Recorded request session with status: ok
+Sentry Logger [log]: [Tracing] Finishing "http.server" root span "/_error" with ID d29d97b507b397fa
+Sentry Logger [log]: SpanExporter exported 4 spans, 0 spans are waiting for their parent spans to finish
+Sentry Logger [log]: Instrumentation suppressed, returning Noop Span
+Sentry Logger [log]: [Tracing] Not injecting trace data for url because tracing is suppressed.
+Sentry Logger [log]: @opentelemetry_sentry-patched/instrumentation-http http instrumentation outgoingRequest
+Sentry Logger [log]: @opentelemetry_sentry-patched/instrumentation-http http.ClientRequest return request
+Sentry Logger [error]: Transport disabled
+Sentry Logger [log]: @sentry/instrumentation-http Handling finished outgoing request
+Sentry Logger [log]: @opentelemetry_sentry-patched/instrumentation-http outgoingRequest on request error() AggregateError:
+    at ignore-listed frames {
+  code: 'ECONNREFUSED'
+}
+Sentry Logger [warn]: [Spotlight] Failed to send envelope to Spotlight Sidecar
+Sentry Logger [log]: @opentelemetry_sentry-patched/instrumentation-http outgoingRequest on request close()
