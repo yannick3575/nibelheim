@@ -10,6 +10,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { Search, Star, X, FileEdit, CheckCircle2, Archive } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { PROMPT_CATEGORIES, type PromptCategory, type PromptStatus } from '@/lib/prompt-library/types';
@@ -102,6 +107,7 @@ export function FilterBar({
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
             className="pl-9"
+            aria-label="Recherche"
           />
         </div>
 
@@ -124,20 +130,40 @@ export function FilterBar({
         </Select>
 
         {/* Favorites toggle */}
-        <Button
-          variant={showFavoritesOnly ? 'default' : 'outline'}
-          size="icon"
-          onClick={() => onShowFavoritesChange(!showFavoritesOnly)}
-          className={cn(showFavoritesOnly && 'bg-yellow-500 hover:bg-yellow-600')}
-        >
-          <Star className={cn('h-4 w-4', showFavoritesOnly && 'fill-current')} />
-        </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant={showFavoritesOnly ? 'default' : 'outline'}
+              size="icon"
+              onClick={() => onShowFavoritesChange(!showFavoritesOnly)}
+              className={cn(showFavoritesOnly && 'bg-yellow-500 hover:bg-yellow-600')}
+              aria-label={showFavoritesOnly ? "Afficher tout" : "Afficher les favoris uniquement"}
+            >
+              <Star className={cn('h-4 w-4', showFavoritesOnly && 'fill-current')} />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>{showFavoritesOnly ? "Afficher tout" : "Afficher les favoris uniquement"}</p>
+          </TooltipContent>
+        </Tooltip>
 
         {/* Clear filters */}
         {hasActiveFilters && (
-          <Button variant="ghost" size="icon" onClick={clearFilters}>
-            <X className="h-4 w-4" />
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={clearFilters}
+                aria-label="Effacer les filtres"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Effacer les filtres</p>
+            </TooltipContent>
+          </Tooltip>
         )}
       </div>
     </div>

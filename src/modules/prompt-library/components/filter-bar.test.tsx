@@ -29,9 +29,8 @@ describe('FilterBar', () => {
 
   it('should render favorites toggle button', () => {
     render(<FilterBar {...defaultProps} />);
-    const buttons = screen.getAllByRole('button');
-    // Find the star button (favorites toggle)
-    expect(buttons.length).toBeGreaterThan(0);
+    // Check by accessible name instead of just 'button'
+    expect(screen.getByRole('button', { name: "Afficher les favoris uniquement" })).toBeInTheDocument();
   });
 
   it('should call onSearchChange when typing in search', async () => {
@@ -48,9 +47,8 @@ describe('FilterBar', () => {
     const user = userEvent.setup();
     render(<FilterBar {...defaultProps} />);
 
-    // The favorites button has a Star icon
-    const buttons = screen.getAllByRole('button');
-    const favButton = buttons[0]; // First button is favorites
+    // Use accessible name
+    const favButton = screen.getByRole('button', { name: "Afficher les favoris uniquement" });
 
     await user.click(favButton);
     expect(defaultProps.onShowFavoritesChange).toHaveBeenCalledWith(true);
@@ -60,8 +58,8 @@ describe('FilterBar', () => {
     const user = userEvent.setup();
     render(<FilterBar {...defaultProps} showFavoritesOnly={true} />);
 
-    const buttons = screen.getAllByRole('button');
-    const favButton = buttons[0];
+    // Label changes when active
+    const favButton = screen.getByRole('button', { name: "Afficher tout" });
 
     await user.click(favButton);
     expect(defaultProps.onShowFavoritesChange).toHaveBeenCalledWith(false);
@@ -70,17 +68,14 @@ describe('FilterBar', () => {
   it('should show clear button when filters are active', () => {
     render(<FilterBar {...defaultProps} searchQuery="test" />);
 
-    // Should have 2 buttons: favorites and clear
-    const buttons = screen.getAllByRole('button');
-    expect(buttons.length).toBe(2);
+    // Check by accessible name
+    expect(screen.getByRole('button', { name: "Effacer les filtres" })).toBeInTheDocument();
   });
 
   it('should not show clear button when no filters active', () => {
     render(<FilterBar {...defaultProps} />);
 
-    // Should have only 1 button: favorites
-    const buttons = screen.getAllByRole('button');
-    expect(buttons.length).toBe(1);
+    expect(screen.queryByRole('button', { name: "Effacer les filtres" })).not.toBeInTheDocument();
   });
 
   it('should clear all filters when clicking clear button', async () => {
@@ -94,8 +89,7 @@ describe('FilterBar', () => {
       />
     );
 
-    const buttons = screen.getAllByRole('button');
-    const clearButton = buttons[buttons.length - 1]; // Last button is clear
+    const clearButton = screen.getByRole('button', { name: "Effacer les filtres" });
 
     await user.click(clearButton);
 
@@ -114,14 +108,12 @@ describe('FilterBar', () => {
   it('should show clear button when category is selected', () => {
     render(<FilterBar {...defaultProps} selectedCategory="coding" />);
 
-    const buttons = screen.getAllByRole('button');
-    expect(buttons.length).toBe(2);
+    expect(screen.getByRole('button', { name: "Effacer les filtres" })).toBeInTheDocument();
   });
 
   it('should show clear button when favorites is selected', () => {
     render(<FilterBar {...defaultProps} showFavoritesOnly={true} />);
 
-    const buttons = screen.getAllByRole('button');
-    expect(buttons.length).toBe(2);
+    expect(screen.getByRole('button', { name: "Effacer les filtres" })).toBeInTheDocument();
   });
 });
