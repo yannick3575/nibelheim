@@ -200,13 +200,14 @@ export async function listApiTokens(): Promise<ApiToken[]> {
 
 /**
  * Revoke (delete) an API token
+ * Returns true if a token was actually deleted, false otherwise
  */
 export async function revokeApiToken(tokenId: string): Promise<boolean> {
     const supabase = await createServerClient();
 
-    const { error } = await supabase
+    const { error, count } = await supabase
         .from('api_tokens')
-        .delete()
+        .delete({ count: 'exact' })
         .eq('id', tokenId);
 
     if (error) {
@@ -214,7 +215,8 @@ export async function revokeApiToken(tokenId: string): Promise<boolean> {
         return false;
     }
 
-    return true;
+    // Return true only if a row was actually deleted (count > 0)
+    return count !== null && count > 0;
 }
 
 // ============================================
