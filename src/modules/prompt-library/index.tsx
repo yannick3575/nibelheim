@@ -5,10 +5,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { BookText, Plus, Grid3x3, List, Star, Loader2, Sparkles, Database } from 'lucide-react';
+import { BookText, Plus, Grid3x3, List, Loader2, Sparkles, Database } from 'lucide-react';
 import { PromptList } from './components/prompt-list';
 import { CreatePromptDialog } from './components/create-prompt-dialog';
 import { FilterBar } from './components/filter-bar';
+import { PromptStats } from './components/prompt-stats';
 import { SourcesList } from './components/sources-list';
 import type { Prompt, PromptCategory, PromptStatus } from '@/lib/prompt-library/types';
 import { toast } from 'sonner';
@@ -211,29 +212,7 @@ export default function PromptLibraryModule() {
         {/* Prompts Tab Content */}
         <TabsContent value="prompts" className="flex-1 flex flex-col space-y-6 mt-6">
           {/* Stats with subtle Aurora accents */}
-          <div className="grid gap-4 md:grid-cols-3">
-            <Card className="border-aurora-magenta/20 hover:border-aurora-magenta/30 transition-colors">
-              <CardHeader className="pb-2">
-                <CardDescription>Total</CardDescription>
-                <CardTitle className="text-2xl text-aurora-magenta">{loading ? '-' : stats.total}</CardTitle>
-              </CardHeader>
-            </Card>
-            <Card className="border-yellow-500/20 hover:border-yellow-500/30 transition-colors">
-              <CardHeader className="pb-2">
-                <CardDescription>Favoris</CardDescription>
-                <CardTitle className="text-2xl flex items-center gap-2">
-                  <Star className="h-5 w-5 text-yellow-500 fill-yellow-500" />
-                  {loading ? '-' : stats.favorites}
-                </CardTitle>
-              </CardHeader>
-            </Card>
-            <Card className="border-aurora-violet/20 hover:border-aurora-violet/30 transition-colors">
-              <CardHeader className="pb-2">
-                <CardDescription>Catégories utilisées</CardDescription>
-                <CardTitle className="text-2xl text-aurora-violet">{loading ? '-' : stats.categories}</CardTitle>
-              </CardHeader>
-            </Card>
-          </div>
+          <PromptStats stats={stats} loading={loading} />
 
           {/* Filters */}
           <FilterBar
