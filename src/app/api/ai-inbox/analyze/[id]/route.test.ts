@@ -5,6 +5,14 @@ import { POST } from './route';
 // Mock the ai-inbox lib
 vi.mock('@/lib/ai-inbox', () => ({
   getItem: vi.fn(),
+  getSettings: vi.fn(),
+  updateItem: vi.fn(),
+}));
+
+// Mock the gemini lib
+vi.mock('@/lib/ai-inbox-gemini', () => ({
+  analyzeItem: vi.fn(),
+  DEFAULT_USER_PROFILE: { interests: [], expertise_level: 'intermediate' },
 }));
 
 // Mock the logger
@@ -20,7 +28,8 @@ vi.mock('@/lib/supabase/server', () => ({
   createClient: vi.fn(),
 }));
 
-import { getItem } from '@/lib/ai-inbox';
+import { getItem, getSettings, updateItem } from '@/lib/ai-inbox';
+import { analyzeItem } from '@/lib/ai-inbox-gemini';
 import { createClient } from '@/lib/supabase/server';
 
 describe('/api/ai-inbox/analyze/[id]', () => {
@@ -82,14 +91,25 @@ describe('/api/ai-inbox/analyze/[id]', () => {
       };
 
       vi.mocked(getItem).mockResolvedValue(mockItem);
+      vi.mocked(getSettings).mockResolvedValue(null);
+      vi.mocked(analyzeItem).mockResolvedValue({
+        summary: 'Summary',
+        key_points: ['Point 1'],
+        sentiment: 'neutral',
+        relevance_score: 8,
+        suggested_action: 'read',
+      });
+      vi.mocked(updateItem).mockResolvedValue(true);
 
       const response = await POST(createRequest(), createParams('item-1'));
       const data = await response.json();
 
       expect(response.status).toBe(200);
       expect(data.success).toBe(true);
-      expect(data.message).toContain('Analysis queued');
+      expect(data.analysis).toBeDefined();
       expect(getItem).toHaveBeenCalledWith('item-1');
+      expect(analyzeItem).toHaveBeenCalled();
+      expect(updateItem).toHaveBeenCalled();
     });
 
     it('should return 404 when item not found', async () => {
