@@ -146,11 +146,18 @@ export const SourceCard = memo(function SourceCard({
               </Tooltip>
 
               <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Plus d'options">
-                    <MoreVertical className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Plus d'options">
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Plus d&apos;options</p>
+                  </TooltipContent>
+                </Tooltip>
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem onClick={() => onEdit(source)}>
                     <Pencil className="mr-2 h-4 w-4" />
@@ -217,9 +224,16 @@ export const SourceCard = memo(function SourceCard({
 
           {source.last_error && (
             <div className="mt-2 p-2 rounded bg-destructive/10 border border-destructive/20">
-              <p className="text-xs text-destructive truncate" title={source.last_error}>
-                {source.last_error}
-              </p>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <p className="text-xs text-destructive truncate cursor-help">
+                    {source.last_error}
+                  </p>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="max-w-xs break-words">{source.last_error}</p>
+                </TooltipContent>
+              </Tooltip>
             </div>
           )}
         </CardContent>
