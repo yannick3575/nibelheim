@@ -1,13 +1,24 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createClient as createServiceClient } from '@supabase/supabase-js';
+import { createClient } from '@/lib/supabase/server';
 
 /**
  * GET /api/automation/health
  * Diagnostic endpoint to check automation system health
  *
- * This endpoint does NOT require authentication to facilitate debugging
+ * This endpoint requires authentication.
  */
 export async function GET() {
+    // 1. Authentication Check
+    const supabaseAuth = await createClient();
+    const {
+        data: { user },
+    } = await supabaseAuth.auth.getUser();
+
+    if (!user) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const diagnostics = {
         timestamp: new Date().toISOString(),
         environment: process.env.NODE_ENV,
@@ -39,7 +50,7 @@ export async function GET() {
 
     // Check 2: Supabase connection
     try {
-        const supabase = createClient(
+        const supabase = createServiceClient(
             process.env.NEXT_PUBLIC_SUPABASE_URL!,
             process.env.SUPABASE_SERVICE_ROLE_KEY!
         );
@@ -69,7 +80,7 @@ export async function GET() {
 
     // Check 3: API tokens table exists
     try {
-        const supabase = createClient(
+        const supabase = createServiceClient(
             process.env.NEXT_PUBLIC_SUPABASE_URL!,
             process.env.SUPABASE_SERVICE_ROLE_KEY!
         );
@@ -98,7 +109,7 @@ export async function GET() {
 
     // Check 4: Tech watch articles table
     try {
-        const supabase = createClient(
+        const supabase = createServiceClient(
             process.env.NEXT_PUBLIC_SUPABASE_URL!,
             process.env.SUPABASE_SERVICE_ROLE_KEY!
         );
@@ -127,7 +138,7 @@ export async function GET() {
 
     // Check 5: Automation logs table
     try {
-        const supabase = createClient(
+        const supabase = createServiceClient(
             process.env.NEXT_PUBLIC_SUPABASE_URL!,
             process.env.SUPABASE_SERVICE_ROLE_KEY!
         );
@@ -156,7 +167,7 @@ export async function GET() {
 
     // Check 6: Test token validation flow (without actual token)
     try {
-        const supabase = createClient(
+        const supabase = createServiceClient(
             process.env.NEXT_PUBLIC_SUPABASE_URL!,
             process.env.SUPABASE_SERVICE_ROLE_KEY!
         );
