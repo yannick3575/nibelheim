@@ -1,6 +1,6 @@
 'use client';
 
-import { useOptimistic, useTransition } from 'react';
+import { useOptimistic, useTransition, memo } from 'react';
 import { ExternalLink, MessageSquare, Check, Circle, Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,7 +16,7 @@ interface ArticleCardProps {
     onToggleFavorite?: (id: string, is_favorite: boolean) => Promise<void>;
 }
 
-export function ArticleCard({ article, onToggleRead, onToggleFavorite }: ArticleCardProps) {
+export const ArticleCard = memo(function ArticleCard({ article, onToggleRead, onToggleFavorite }: ArticleCardProps) {
     // React 19: useOptimistic for instant UI feedback - reverts to source value on re-render
     const [optimisticRead, setOptimisticRead] = useOptimistic(
         article.read,
@@ -153,4 +153,4 @@ export function ArticleCard({ article, onToggleRead, onToggleFavorite }: Article
             )}
         </Card>
     );
-}
+});

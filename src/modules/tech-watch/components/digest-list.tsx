@@ -1,5 +1,6 @@
 'use client';
 
+import { memo } from 'react';
 import { Calendar } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,7 +21,7 @@ function formatDate(dateStr: string): string {
     });
 }
 
-export function DigestList({ digests, selectedDate, onSelect }: DigestListProps) {
+export const DigestList = memo(function DigestList({ digests, selectedDate, onSelect }: DigestListProps) {
     if (digests.length === 0) {
         return (
             <Card>
@@ -71,4 +72,4 @@ export function DigestList({ digests, selectedDate, onSelect }: DigestListProps)
             </CardContent>
         </Card>
     );
-}
+});

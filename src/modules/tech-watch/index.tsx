@@ -93,6 +93,14 @@ export default function TechWatchModule() {
         if (!response.ok) {
             throw new Error('Failed to update article');
         }
+
+        // Update local state to maintain UI consistency if parent re-renders
+        setCurrentDigest(prev => prev ? {
+            ...prev,
+            articles: prev.articles.map(a =>
+                a.id === id ? { ...a, read } : a
+            )
+        } : null);
     }, []);
 
     // Handle article favorite toggle
@@ -108,14 +116,12 @@ export default function TechWatchModule() {
         }
 
         // Update local state for digest articles
-        if (currentDigest) {
-            setCurrentDigest(prev => prev ? {
-                ...prev,
-                articles: prev.articles.map(a =>
-                    a.id === id ? { ...a, is_favorite } : a
-                )
-            } : null);
-        }
+        setCurrentDigest(prev => prev ? {
+            ...prev,
+            articles: prev.articles.map(a =>
+                a.id === id ? { ...a, is_favorite } : a
+            )
+        } : null);
 
         // Update favorites list
         if (is_favorite) {
@@ -125,7 +131,7 @@ export default function TechWatchModule() {
             // Remove from favorites
             setFavorites(prev => prev.filter(a => a.id !== id));
         }
-    }, [currentDigest, fetchFavorites]);
+    }, [fetchFavorites]);
 
     // Refresh current view
     const handleRefresh = useCallback(() => {
