@@ -194,11 +194,18 @@ export const PromptCard = memo(function PromptCard({ prompt, onDelete, onUpdate 
               </Tooltip>
 
               <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Plus d'options">
-                    <MoreVertical className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Plus d'options">
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Plus d&apos;options</p>
+                  </TooltipContent>
+                </Tooltip>
                 <DropdownMenuContent align="end">
                   {prompt.status === 'draft' && (
                     <DropdownMenuItem onClick={handlePublish} className="text-green-600">
