@@ -4,6 +4,8 @@ import { getItems, createItem, getSettings, updateItem } from '@/lib/ai-inbox';
 import { analyzeItem, DEFAULT_USER_PROFILE } from '@/lib/ai-inbox-gemini';
 import { logger } from '@/lib/logger';
 import { createClient } from '@/lib/supabase/server';
+import { extractUrlContent } from '@/lib/scraper';
+import { getYouTubeTranscript } from '@/lib/youtube';
 import type { ItemFilters, Item } from '@/types/ai-inbox';
 
 /**
@@ -182,8 +184,41 @@ async function triggerAsyncAnalysis(item: Item): Promise<void> {
     const settings = await getSettings();
     const userProfile = settings?.profile || DEFAULT_USER_PROFILE;
 
-    // Run Gemini analysis
-    const analysis = await analyzeItem(item, userProfile);
+    // ATTEMPT CONTENT EXTRACTION: 
+    // 1. If YouTube, try to get transcript
+    // 2. Otherwise (or if transcript fails), try Jina Reader scraping
+    let currentItem = { ...item };
+    if (item.url && !item.raw_content) {
+      let extracted: string | null = null;
+
+      const isYouTube = item.url.includes('youtube.com') || item.url.includes('youtu.be');
+
+      if (isYouTube) {
+        extracted = await getYouTubeTranscript(item.url);
+        if (extracted) {
+          logger.log('[ai-inbox/items] Successfully obtained YouTube transcript');
+        }
+      }
+
+      // Fallback to Jina Reader if not YouTube or if transcript failed
+      if (!extracted) {
+        extracted = await extractUrlContent(item.url);
+        if (extracted) {
+          logger.log('[ai-inbox/items] Successfully updated raw_content via Jina scraping');
+        }
+      }
+
+      if (extracted) {
+        // Update database with extracted content
+        const updateSuccess = await updateItem(item.id, { raw_content: extracted });
+        if (updateSuccess) {
+          currentItem.raw_content = extracted;
+        }
+      }
+    }
+
+    // Run Gemini analysis (now with more content if scraping succeeded)
+    const analysis = await analyzeItem(currentItem, userProfile);
 
     if (analysis) {
       // Update item with analysis results

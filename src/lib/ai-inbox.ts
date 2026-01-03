@@ -182,6 +182,8 @@ export async function updateItem(
   if (updates.tags !== undefined) updateData.tags = updates.tags;
   if (updates.ai_analysis !== undefined)
     updateData.ai_analysis = updates.ai_analysis;
+  if (updates.raw_content !== undefined)
+    updateData.raw_content = updates.raw_content;
 
   const { error } = await supabase
     .from('ai_inbox_items')

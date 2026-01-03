@@ -13,7 +13,7 @@ import { logger } from '@/lib/logger';
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
 // Configuration
-const MODEL_ID = 'gemini-2.0-flash'; // Stable model for production
+const MODEL_ID = 'gemini-3.0-flash'; // Latest stable model as of 2026
 const GENERATION_CONFIG = {
   temperature: 0.3,
   maxOutputTokens: 1024,

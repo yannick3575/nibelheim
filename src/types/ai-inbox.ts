@@ -153,6 +153,7 @@ export interface UpdateItemInput {
   is_favorite?: boolean;
   tags?: string[];
   ai_analysis?: AIAnalysis;
+  raw_content?: string;
 }
 
 /**
