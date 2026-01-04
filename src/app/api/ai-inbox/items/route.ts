@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { getItems, createItem, getSettings, updateItem } from '@/lib/ai-inbox';
+import { getItems, createItem, getSettings } from '@/lib/ai-inbox';
 import { analyzeItem, DEFAULT_USER_PROFILE } from '@/lib/ai-inbox-gemini';
 import { logger } from '@/lib/logger';
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { extractUrlContent } from '@/lib/scraper';
 import { getYouTubeTranscript } from '@/lib/youtube';
 import type { ItemFilters, Item } from '@/types/ai-inbox';
@@ -188,6 +189,10 @@ export async function POST(request: NextRequest) {
  */
 async function triggerAsyncAnalysis(item: Item): Promise<void> {
   const logPrefix = `[ai-inbox/items][analysis][${item.id}]`;
+
+  // Use Admin Client to bypass RLS in background task where auth context (cookies) might be lost
+  const supabaseAdmin = createAdminClient();
+
   try {
     logger.log(`${logPrefix} Starting async analysis`);
 
@@ -225,11 +230,17 @@ async function triggerAsyncAnalysis(item: Item): Promise<void> {
       }
 
       if (extracted) {
-        // Update database with extracted content
-        const updateSuccess = await updateItem(item.id, { raw_content: extracted });
-        if (updateSuccess) {
+        // Update database with extracted content using Admin Client
+        const { error: updateError } = await supabaseAdmin
+          .from('ai_inbox_items')
+          .update({ raw_content: extracted })
+          .eq('id', item.id);
+
+        if (!updateError) {
           currentItem.raw_content = extracted;
           logger.log(`${logPrefix} Saved extracted content to database`);
+        } else {
+          logger.error(`${logPrefix} Failed to save extracted content:`, updateError);
         }
       }
     }
@@ -239,19 +250,22 @@ async function triggerAsyncAnalysis(item: Item): Promise<void> {
     const analysis = await analyzeItem(currentItem, userProfile);
 
     if (analysis) {
-      // Update item with analysis results
-      const success = await updateItem(item.id, { ai_analysis: analysis });
+      // Update item with analysis results using Admin Client
+      const { error: saveError } = await supabaseAdmin
+        .from('ai_inbox_items')
+        .update({ ai_analysis: analysis })
+        .eq('id', item.id);
 
-      if (success) {
+      if (!saveError) {
         logger.log(`${logPrefix} Analysis saved successfully`);
       } else {
-        logger.error(`${logPrefix} Failed to save analysis to database`);
+        logger.error(`${logPrefix} Failed to save analysis to database:`, saveError);
       }
     } else {
       logger.warn(`${logPrefix} No analysis returned from Gemini`);
 
-      // FALLBACK: Update with a "Failure" content to stop the "In Progress" spinner
-      await updateItem(item.id, {
+      // FALLBACK: Update with a "Failure" content
+      await supabaseAdmin.from('ai_inbox_items').update({
         ai_analysis: {
           summary: "L'analyse automatique a échoué (timeout ou erreur de l'IA).",
           actionability: 1,
@@ -261,14 +275,14 @@ async function triggerAsyncAnalysis(item: Item): Promise<void> {
           suggested_category: item.category,
           suggested_tags: item.tags || []
         }
-      });
+      }).eq('id', item.id);
     }
   } catch (error) {
     logger.error(`${logPrefix} Error in async analysis flow:`, error);
 
     // Ensure we don't leave the item in a "stuck" state if possible
     try {
-      await updateItem(item.id, {
+      await supabaseAdmin.from('ai_inbox_items').update({
         ai_analysis: {
           summary: "Erreur critique lors de l'analyse en arrière-plan.",
           actionability: 1,
@@ -278,7 +292,7 @@ async function triggerAsyncAnalysis(item: Item): Promise<void> {
           suggested_category: item.category,
           suggested_tags: item.tags || []
         }
-      });
+      }).eq('id', item.id);
     } catch (innerError) {
       logger.error(`${logPrefix} Failed to save final error state:`, innerError);
     }
