@@ -8,6 +8,7 @@ import { InboxItemCard } from './components/inbox-item-card';
 import { AddItemDialog } from './components/add-item-dialog';
 import { SettingsDialog } from './components/settings-dialog';
 import { FilterBar } from './components/filter-bar';
+import { createClient } from '@/lib/supabase/client';
 import type { Item, Status, Category, SourceType } from '@/types/ai-inbox';
 
 type StatusFilter = Status | 'all';
@@ -52,6 +53,45 @@ export default function AIInboxModule() {
   useEffect(() => {
     fetchItems();
   }, [fetchItems]);
+
+  // Real-time subscription
+  useEffect(() => {
+    const supabase = createClient();
+
+    const channel = supabase
+      .channel('ai_inbox_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'ai_inbox_items',
+        },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            const newItem = payload.new as Item;
+            setItems((prev) => {
+              // Avoid duplicates
+              if (prev.find((item) => item.id === newItem.id)) return prev;
+              return [newItem, ...prev];
+            });
+          } else if (payload.eventType === 'UPDATE') {
+            const updatedItem = payload.new as Item;
+            setItems((prev) =>
+              prev.map((item) => (item.id === updatedItem.id ? updatedItem : item))
+            );
+          } else if (payload.eventType === 'DELETE') {
+            const deletedId = payload.old.id;
+            setItems((prev) => prev.filter((item) => item.id !== deletedId));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   // Calculate counts for filter bar
   const counts = useMemo(() => {
