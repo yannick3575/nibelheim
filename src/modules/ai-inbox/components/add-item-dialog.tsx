@@ -20,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Loader2, Plus } from 'lucide-react';
+import { Loader2, Plus, Wand2 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { Item, SourceType, Category } from '@/types/ai-inbox';
 import { SOURCE_TYPE_LABELS, CATEGORY_LABELS } from '@/types/ai-inbox';
@@ -58,6 +58,7 @@ export function AddItemDialog({
   const [rawContent, setRawContent] = useState('');
   const [tagsInput, setTagsInput] = useState('');
   const [saving, setSaving] = useState(false);
+  const [isFetchingMeta, setIsFetchingMeta] = useState(false);
 
   const resetForm = () => {
     setTitle('');
@@ -66,6 +67,73 @@ export function AddItemDialog({
     setCategory('news');
     setRawContent('');
     setTagsInput('');
+  };
+
+  const handleUrlBlur = async () => {
+    if (!url || !isValidUrl(url)) return;
+    if (title) return;
+
+    setIsFetchingMeta(true);
+    try {
+      const response = await fetch(
+        `/api/ai-inbox/parse-url?url=${encodeURIComponent(url)}`
+      );
+      if (response.ok) {
+        const data = await response.json();
+        if (data.title) {
+          setTitle(data.title);
+          toast.success('Titre récupéré !');
+
+          // Auto-detect source type
+          if (url.includes('youtube.com') || url.includes('youtu.be')) {
+            setSourceType('youtube');
+          } else if (url.includes('substack.com')) {
+            setSourceType('substack');
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching meta:', error);
+    } finally {
+      setIsFetchingMeta(false);
+    }
+  };
+
+  const handleFetchMeta = async () => {
+    if (!url || !isValidUrl(url)) {
+      toast.error('URL invalide');
+      return;
+    }
+
+    setIsFetchingMeta(true);
+    try {
+      const response = await fetch(
+        `/api/ai-inbox/parse-url?url=${encodeURIComponent(url)}`
+      );
+      if (response.ok) {
+        const data = await response.json();
+        if (data.title) {
+          setTitle(data.title);
+          toast.success('Titre récupéré !');
+
+           // Auto-detect source type
+           if (url.includes('youtube.com') || url.includes('youtu.be')) {
+            setSourceType('youtube');
+          } else if (url.includes('substack.com')) {
+            setSourceType('substack');
+          }
+        } else {
+            toast.warning('Aucun titre trouvé');
+        }
+      } else {
+        toast.error('Erreur lors de la récupération');
+      }
+    } catch (error) {
+      console.error('Error fetching meta:', error);
+      toast.error('Erreur lors de la récupération');
+    } finally {
+      setIsFetchingMeta(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -154,13 +222,31 @@ export function AddItemDialog({
           {/* URL */}
           <div className="grid gap-2">
             <Label htmlFor="url">URL</Label>
-            <Input
-              id="url"
-              type="url"
-              placeholder="https://youtube.com/watch?v=..."
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-            />
+            <div className="flex gap-2">
+              <Input
+                id="url"
+                type="url"
+                placeholder="https://youtube.com/watch?v=..."
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                onBlur={handleUrlBlur}
+                className="flex-1"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={handleFetchMeta}
+                disabled={isFetchingMeta || !url}
+                title="Récupérer le titre"
+              >
+                {isFetchingMeta ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Wand2 className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
           </div>
 
           {/* Source Type & Category */}
