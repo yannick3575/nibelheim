@@ -70,11 +70,13 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     }
 
     // Run Gemini analysis
+    logger.log(`[ai-inbox/analyze][${id}] Starting Gemini analysis`);
     const analysis = await analyzeItem(currentItem, userProfile);
 
     if (!analysis) {
+      logger.error(`[ai-inbox/analyze][${id}] Gemini analysis failed`);
       return NextResponse.json(
-        { error: 'Analysis failed. Please try again later.' },
+        { error: "L'analyse AI a échoué (timeout ou erreur). Veuillez réessayer." },
         { status: 500 }
       );
     }
@@ -83,22 +85,23 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     const success = await updateItem(id, { ai_analysis: analysis });
 
     if (!success) {
+      logger.error(`[ai-inbox/analyze][${id}] Failed to save analysis to database`);
       return NextResponse.json(
-        { error: 'Failed to save analysis results.' },
+        { error: 'Erreur lors de la sauvegarde des résultats.' },
         { status: 500 }
       );
     }
 
-    logger.log('[ai-inbox/analyze] Analysis completed for item:', id);
+    logger.log(`[ai-inbox/analyze][${id}] Analysis completed successfully`);
 
     return NextResponse.json({
       success: true,
       analysis,
     });
   } catch (error) {
-    logger.error('[ai-inbox/analyze] POST error:', error);
+    logger.error(`[ai-inbox/analyze] POST error:`, error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Erreur interne du serveur' },
       { status: 500 }
     );
   }

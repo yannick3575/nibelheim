@@ -8,6 +8,7 @@
 import { logger } from './logger';
 
 const JINA_READER_URL = 'https://r.jina.ai/';
+const FETCH_TIMEOUT = 10000; // 10 seconds timeout
 
 /**
  * Extract content from a URL
@@ -22,12 +23,19 @@ export async function extractUrlContent(url: string): Promise<string | null> {
         // We append the URL to the Jina Reader endpoint
         const targetUrl = `${JINA_READER_URL}${url}`;
 
+        // Create AbortController for timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
+
         const response = await fetch(targetUrl, {
             method: 'GET',
             headers: {
                 'Accept': 'text/plain', // Jina returns plain text/markdown
             },
+            signal: controller.signal,
         });
+
+        clearTimeout(timeoutId);
 
         if (!response.ok) {
             logger.warn(`[scraper] Failed to extract from ${url}: ${response.statusText}`);
@@ -44,7 +52,11 @@ export async function extractUrlContent(url: string): Promise<string | null> {
         logger.log(`[scraper] Successfully extracted ${content.length} characters from ${url}`);
         return content;
     } catch (error) {
-        logger.error(`[scraper] Error extracting from ${url}:`, error);
+        if (error instanceof Error && error.name === 'AbortError') {
+            logger.warn(`[scraper] Extraction timeout for ${url}`);
+        } else {
+            logger.error(`[scraper] Error extracting from ${url}:`, error);
+        }
         return null;
     }
 }

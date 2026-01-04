@@ -22,6 +22,7 @@ const GENERATION_CONFIG = {
 
 const MAX_RETRIES = 3;
 const RETRY_DELAYS = [1000, 2000, 4000]; // Exponential backoff
+const ANALYSIS_TIMEOUT = 30000; // 30 seconds timeout for Gemini
 
 /**
  * System prompt for Gemini - defines the AI's persona and response format
@@ -90,36 +91,37 @@ IMPORTANT : Retourne UNIQUEMENT le JSON, sans backticks, sans markdown, sans tex
  */
 function parseGeminiResponse(text: string): AIAnalysis | null {
   try {
-    // Clean potential markdown backticks
-    const cleaned = text
-      .replace(/```json\n?/g, '')
-      .replace(/```\n?/g, '')
-      .trim();
+    // Technical cleanup
+    let cleaned = text.trim();
+
+    // Remove potential markdown blocks
+    if (cleaned.includes('```')) {
+      const match = cleaned.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+      if (match && match[1]) {
+        cleaned = match[1].trim();
+      }
+    }
 
     const parsed = JSON.parse(cleaned);
 
-    // Basic validation
-    if (
-      !parsed.summary ||
-      typeof parsed.actionability !== 'number' ||
-      typeof parsed.complexity !== 'number'
-    ) {
-      logger.error('[ai-inbox-gemini] Invalid response structure:', parsed);
-      return null;
-    }
+    // Basic structure validation
+    if (!parsed || typeof parsed !== 'object') return null;
 
-    // Ensure arrays exist
-    if (!Array.isArray(parsed.project_ideas)) {
-      parsed.project_ideas = [];
-    }
-    if (!Array.isArray(parsed.suggested_tags)) {
-      parsed.suggested_tags = [];
-    }
+    // Ensure all required fields exist with defaults
+    const analysis: AIAnalysis = {
+      summary: parsed.summary || 'Résumé non disponible.',
+      actionability: typeof parsed.actionability === 'number' ? parsed.actionability : 3,
+      complexity: typeof parsed.complexity === 'number' ? parsed.complexity : 3,
+      project_ideas: Array.isArray(parsed.project_ideas) ? parsed.project_ideas : [],
+      relevance_to_profile: parsed.relevance_to_profile || 'Non spécifié.',
+      suggested_category: parsed.suggested_category || 'news',
+      suggested_tags: Array.isArray(parsed.suggested_tags) ? parsed.suggested_tags : [],
+    };
 
-    return parsed as AIAnalysis;
+    return analysis;
   } catch (error) {
     logger.error('[ai-inbox-gemini] Failed to parse response:', error);
-    logger.error('[ai-inbox-gemini] Raw text:', text);
+    logger.error('[ai-inbox-gemini] Raw text snippet:', text.substring(0, 200));
     return null;
   }
 }
@@ -163,8 +165,14 @@ export async function analyzeItem(
         `[ai-inbox-gemini] Analyzing item ${item.id}, attempt ${attempt + 1}/${MAX_RETRIES}`
       );
 
-      const result = await model.generateContent(userPrompt);
-      const response = result.response;
+      // Wrap generateContent with a timeout
+      const generatePromise = model.generateContent(userPrompt);
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Gemini API timeout')), ANALYSIS_TIMEOUT)
+      );
+
+      const result = await Promise.race([generatePromise, timeoutPromise]);
+      const response = (result as any).response;
       const text = response.text();
 
       const analysis = parseGeminiResponse(text);
@@ -174,11 +182,10 @@ export async function analyzeItem(
         return analysis;
       }
 
-      // If parsing failed but we got a response, don't retry
+      // If parsing failed but we got a response, don't retry immediately
       logger.error(
         `[ai-inbox-gemini] Failed to parse response for item ${item.id}`
       );
-      return null;
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
       logger.error(

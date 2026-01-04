@@ -187,8 +187,9 @@ export async function POST(request: NextRequest) {
  * This runs in the background without blocking the HTTP response
  */
 async function triggerAsyncAnalysis(item: Item): Promise<void> {
+  const logPrefix = `[ai-inbox/items][analysis][${item.id}]`;
   try {
-    logger.log('[ai-inbox/items] Starting async analysis for item:', item.id);
+    logger.log(`${logPrefix} Starting async analysis`);
 
     // Get user settings for personalized analysis
     const settings = await getSettings();
@@ -200,21 +201,26 @@ async function triggerAsyncAnalysis(item: Item): Promise<void> {
     let currentItem = { ...item };
     if (item.url && !item.raw_content) {
       let extracted: string | null = null;
-
       const isYouTube = item.url.includes('youtube.com') || item.url.includes('youtu.be');
 
       if (isYouTube) {
+        logger.log(`${logPrefix} Attempting YouTube transcript fetch`);
         extracted = await getYouTubeTranscript(item.url);
         if (extracted) {
-          logger.log('[ai-inbox/items] Successfully obtained YouTube transcript');
+          logger.log(`${logPrefix} Obtained YouTube transcript (${extracted.length} chars)`);
+        } else {
+          logger.warn(`${logPrefix} YouTube transcript not available`);
         }
       }
 
       // Fallback to Jina Reader if not YouTube or if transcript failed
       if (!extracted) {
+        logger.log(`${logPrefix} Attempting Jina scraping`);
         extracted = await extractUrlContent(item.url);
         if (extracted) {
-          logger.log('[ai-inbox/items] Successfully updated raw_content via Jina scraping');
+          logger.log(`${logPrefix} Updated raw_content via Jina scraping (${extracted.length} chars)`);
+        } else {
+          logger.warn(`${logPrefix} Jina scraping failed`);
         }
       }
 
@@ -223,11 +229,13 @@ async function triggerAsyncAnalysis(item: Item): Promise<void> {
         const updateSuccess = await updateItem(item.id, { raw_content: extracted });
         if (updateSuccess) {
           currentItem.raw_content = extracted;
+          logger.log(`${logPrefix} Saved extracted content to database`);
         }
       }
     }
 
-    // Run Gemini analysis (now with more content if scraping succeeded)
+    // Run Gemini analysis
+    logger.log(`${logPrefix} Starting Gemini analysis`);
     const analysis = await analyzeItem(currentItem, userProfile);
 
     if (analysis) {
@@ -235,15 +243,44 @@ async function triggerAsyncAnalysis(item: Item): Promise<void> {
       const success = await updateItem(item.id, { ai_analysis: analysis });
 
       if (success) {
-        logger.log('[ai-inbox/items] Analysis saved for item:', item.id);
+        logger.log(`${logPrefix} Analysis saved successfully`);
       } else {
-        logger.error('[ai-inbox/items] Failed to save analysis for item:', item.id);
+        logger.error(`${logPrefix} Failed to save analysis to database`);
       }
     } else {
-      logger.log('[ai-inbox/items] No analysis returned for item:', item.id);
+      logger.warn(`${logPrefix} No analysis returned from Gemini`);
+
+      // FALLBACK: Update with a "Failure" content to stop the "In Progress" spinner
+      await updateItem(item.id, {
+        ai_analysis: {
+          summary: "L'analyse automatique a échoué (timeout ou erreur de l'IA).",
+          actionability: 1,
+          complexity: 1,
+          project_ideas: ["Veuillez réessayer manuellement l'analyse."],
+          relevance_to_profile: "Analyse indisponible.",
+          suggested_category: item.category,
+          suggested_tags: item.tags || []
+        }
+      });
     }
   } catch (error) {
-    logger.error('[ai-inbox/items] Error in async analysis:', error);
-    throw error;
+    logger.error(`${logPrefix} Error in async analysis flow:`, error);
+
+    // Ensure we don't leave the item in a "stuck" state if possible
+    try {
+      await updateItem(item.id, {
+        ai_analysis: {
+          summary: "Erreur critique lors de l'analyse en arrière-plan.",
+          actionability: 1,
+          complexity: 1,
+          project_ideas: [],
+          relevance_to_profile: "Erreur technique.",
+          suggested_category: item.category,
+          suggested_tags: item.tags || []
+        }
+      });
+    } catch (innerError) {
+      logger.error(`${logPrefix} Failed to save final error state:`, innerError);
+    }
   }
 }

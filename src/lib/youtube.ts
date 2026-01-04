@@ -7,6 +7,8 @@
 import { YoutubeTranscript } from 'youtube-transcript';
 import { logger } from './logger';
 
+const FETCH_TIMEOUT = 10000; // 10 seconds timeout
+
 /**
  * Extract video ID from various YouTube URL formats
  */
@@ -31,8 +33,13 @@ export async function getYouTubeTranscript(url: string): Promise<string | null> 
     try {
         logger.log(`[youtube] Fetching transcript for video: ${videoId}`);
 
-        // We try to fetch the transcript
-        const transcriptConfig = await YoutubeTranscript.fetchTranscript(videoId);
+        // We try to fetch the transcript with a timeout
+        const transcriptPromise = YoutubeTranscript.fetchTranscript(videoId);
+        const timeoutPromise = new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error('YouTube transcript fetch timeout')), FETCH_TIMEOUT)
+        );
+
+        const transcriptConfig = await Promise.race([transcriptPromise, timeoutPromise]);
 
         if (!transcriptConfig || transcriptConfig.length === 0) {
             logger.warn(`[youtube] No transcript found for video: ${videoId}`);
@@ -51,7 +58,7 @@ export async function getYouTubeTranscript(url: string): Promise<string | null> 
         return fullText;
     } catch (error) {
         // Fail silently but log the error
-        logger.warn(`[youtube] Failed to fetch transcript for ${videoId}:`, error);
+        logger.warn(`[youtube] Failed to fetch transcript for ${videoId}:`, error instanceof Error ? error.message : error);
         return null;
     }
 }
