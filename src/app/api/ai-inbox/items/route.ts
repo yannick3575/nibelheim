@@ -157,10 +157,20 @@ export async function POST(request: NextRequest) {
 
     logger.log('[ai-inbox/items] Created item:', item.id);
 
-    // Fire-and-forget: trigger async analysis without blocking the response
-    triggerAsyncAnalysis(item).catch((err) => {
-      logger.error('[ai-inbox/items] Async analysis failed:', err);
-    });
+    // Use request.waitUntil to ensure async analysis completes in serverless environments
+    if ((request as any).waitUntil) {
+      (request as any).waitUntil(
+        triggerAsyncAnalysis(item).catch((err) => {
+          logger.error('[ai-inbox/items] Async analysis failed:', err);
+        })
+      );
+    } else {
+      // Fallback for environments without waitUntil - still fire and forget but log it
+      logger.warn('[ai-inbox/items] request.waitUntil not available, analysis might be interrupted');
+      triggerAsyncAnalysis(item).catch((err) => {
+        logger.error('[ai-inbox/items] Async analysis failed (fallback):', err);
+      });
+    }
 
     return NextResponse.json(item);
   } catch (error) {

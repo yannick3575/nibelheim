@@ -205,8 +205,10 @@ export default function AIInboxModule() {
     );
   }, []);
 
-  const handleItemCreated = useCallback((item: Item) => {
-    setItems((prev) => [item, ...prev]);
+  const handleItemCreated = useCallback((_item: Item) => {
+    // We rely on Supabase Realtime for the insertion to avoid duplicates
+    // and ensure the item appears in the list correctly.
+    // The dialog will still close and show a success toast.
   }, []);
 
   const handleRefresh = useCallback(() => {
