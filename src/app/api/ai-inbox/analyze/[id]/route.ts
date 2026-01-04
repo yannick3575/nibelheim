@@ -3,6 +3,8 @@ import { getItem, getSettings, updateItem } from '@/lib/ai-inbox';
 import { analyzeItem, DEFAULT_USER_PROFILE } from '@/lib/ai-inbox-gemini';
 import { logger } from '@/lib/logger';
 import { createClient } from '@/lib/supabase/server';
+import { extractUrlContent } from '@/lib/scraper';
+import { getYouTubeTranscript } from '@/lib/youtube';
 
 interface RouteParams {
   params: Promise<{
@@ -43,8 +45,32 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     const settings = await getSettings();
     const userProfile = settings?.profile || DEFAULT_USER_PROFILE;
 
+    // ATTEMPT CONTENT EXTRACTION: 
+    // If URL exists but no raw_content, try to extract it before analysis
+    let currentItem = { ...item };
+    if (item.url && !item.raw_content) {
+      let extracted: string | null = null;
+
+      const isYouTube = item.url.includes('youtube.com') || item.url.includes('youtu.be');
+
+      if (isYouTube) {
+        extracted = await getYouTubeTranscript(item.url);
+      }
+
+      if (!extracted) {
+        extracted = await extractUrlContent(item.url);
+      }
+
+      if (extracted) {
+        const updateSuccess = await updateItem(id, { raw_content: extracted });
+        if (updateSuccess) {
+          currentItem.raw_content = extracted;
+        }
+      }
+    }
+
     // Run Gemini analysis
-    const analysis = await analyzeItem(item, userProfile);
+    const analysis = await analyzeItem(currentItem, userProfile);
 
     if (!analysis) {
       return NextResponse.json(
