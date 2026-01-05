@@ -138,7 +138,23 @@ export const PromptListItem = memo(function PromptListItem({ prompt, onDelete, o
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <span className="font-medium truncate">{prompt.title}</span>
-            {hasVariables && <Braces className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />}
+            {hasVariables && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span
+                    className="cursor-help"
+                    role="img"
+                    aria-label="Ce prompt contient des variables"
+                    tabIndex={0}
+                  >
+                    <Braces className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Ce prompt contient des variables à remplir</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
             {prompt.status === 'draft' && (
               <Badge variant="outline" className="text-[10px] h-4 py-0 bg-orange-500/10 text-orange-600 border-orange-500/20">
                 Brouillon

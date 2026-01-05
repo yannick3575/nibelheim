@@ -142,7 +142,21 @@ export const PromptCard = memo(function PromptCard({ prompt, onDelete, onUpdate 
               <CardTitle className="text-base font-semibold leading-tight line-clamp-2 flex items-center gap-2">
                 {prompt.title}
                 {hasVariables && (
-                  <Braces className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span
+                        className="cursor-help"
+                        role="img"
+                        aria-label="Ce prompt contient des variables"
+                        tabIndex={0}
+                      >
+                        <Braces className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Ce prompt contient des variables à remplir</p>
+                    </TooltipContent>
+                  </Tooltip>
                 )}
               </CardTitle>
               <CardDescription className="mt-1.5 flex items-center gap-1.5 flex-wrap">
