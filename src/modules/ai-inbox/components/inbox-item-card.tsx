@@ -1,6 +1,6 @@
 'use client';
 
-import { useOptimistic, useTransition, useState } from 'react';
+import { useOptimistic, useTransition, useState, memo } from 'react';
 import {
   ExternalLink,
   Check,
@@ -44,7 +44,7 @@ interface InboxItemCardProps {
   onAnalyze: (id: string) => Promise<void>;
 }
 
-export function InboxItemCard({
+export const InboxItemCard = memo(function InboxItemCard({
   item,
   onToggleRead,
   onToggleFavorite,
@@ -352,4 +352,4 @@ export function InboxItemCard({
       )}
     </Card>
   );
-}
+});
