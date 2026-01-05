@@ -6,6 +6,7 @@ import { GET, POST } from './route';
 vi.mock('@/lib/ai-inbox', () => ({
   getItems: vi.fn(),
   createItem: vi.fn(),
+  getSettings: vi.fn(),
 }));
 
 // Mock the logger
@@ -21,7 +22,7 @@ vi.mock('@/lib/supabase/server', () => ({
   createClient: vi.fn(),
 }));
 
-import { getItems, createItem } from '@/lib/ai-inbox';
+import { getItems, createItem, getSettings } from '@/lib/ai-inbox';
 import { createClient } from '@/lib/supabase/server';
 
 describe('/api/ai-inbox/items', () => {
@@ -35,6 +36,8 @@ describe('/api/ai-inbox/items', () => {
           .mockResolvedValue({ data: { user: { id: 'user-123' } } }),
       },
     } as unknown as ReturnType<typeof createClient>);
+
+    vi.mocked(getSettings).mockResolvedValue(null);
   });
 
   describe('GET', () => {
