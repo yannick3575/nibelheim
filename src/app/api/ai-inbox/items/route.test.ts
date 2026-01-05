@@ -14,20 +14,53 @@ vi.mock('@/lib/logger', () => ({
   logger: {
     error: vi.fn(),
     log: vi.fn(),
+    warn: vi.fn(),
   },
 }));
 
-// Mock supabase server
+// Mock Supabase clients
 vi.mock('@/lib/supabase/server', () => ({
   createClient: vi.fn(),
 }));
+vi.mock('@/lib/supabase/admin', () => ({
+  createAdminClient: vi.fn(),
+}));
+
+// Mock AI + scraping helpers to avoid network
+vi.mock('@/lib/ai-inbox-gemini', () => ({
+  analyzeItem: vi.fn(),
+  DEFAULT_USER_PROFILE: {
+    current_stack: [],
+    current_projects: [],
+    interests: [],
+    skill_level: 'intermediate',
+  },
+}));
+vi.mock('@/lib/scraper', () => ({
+  extractUrlContent: vi.fn(),
+}));
+vi.mock('@/lib/youtube', () => ({
+  getYouTubeTranscript: vi.fn(),
+}));
 
 import { getItems, createItem, getSettings } from '@/lib/ai-inbox';
+import { analyzeItem } from '@/lib/ai-inbox-gemini';
+import { extractUrlContent } from '@/lib/scraper';
+import { getYouTubeTranscript } from '@/lib/youtube';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 
 describe('/api/ai-inbox/items', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    const supabaseWriter = {
+      from: vi.fn(() => ({
+        update: vi.fn(() => ({
+          eq: vi.fn().mockResolvedValue({ error: null }),
+        })),
+      })),
+    };
+
     // Default mock for authenticated user
     vi.mocked(createClient).mockResolvedValue({
       auth: {
@@ -36,6 +69,21 @@ describe('/api/ai-inbox/items', () => {
           .mockResolvedValue({ data: { user: { id: 'user-123' } } }),
       },
     } as unknown as ReturnType<typeof createClient>);
+    vi.mocked(createAdminClient).mockReturnValue(
+      supabaseWriter as unknown as ReturnType<typeof createAdminClient>
+    );
+
+    vi.mocked(analyzeItem).mockResolvedValue({
+      summary: 'Summary',
+      actionability: 3,
+      complexity: 2,
+      project_ideas: [],
+      relevance_to_profile: 'Rel',
+      suggested_category: 'news',
+      suggested_tags: [],
+    });
+    vi.mocked(extractUrlContent).mockResolvedValue(null);
+    vi.mocked(getYouTubeTranscript).mockResolvedValue(null);
 
     vi.mocked(getSettings).mockResolvedValue(null);
   });
