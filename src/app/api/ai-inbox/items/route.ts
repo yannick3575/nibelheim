@@ -7,7 +7,8 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { extractUrlContent } from '@/lib/scraper';
 import { getYouTubeTranscript } from '@/lib/youtube';
-import type { ItemFilters, Item } from '@/types/ai-inbox';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import type { ItemFilters, Item, UserProfile } from '@/types/ai-inbox';
 
 /**
  * Schema for creating a new inbox item
@@ -158,17 +159,21 @@ export async function POST(request: NextRequest) {
 
     logger.log('[ai-inbox/items] Created item:', item.id);
 
+    const settings = await getSettings();
+    const userProfile = settings?.profile || DEFAULT_USER_PROFILE;
+    const analysisPromise = triggerAsyncAnalysis(item, userProfile, supabase);
+
     // Use request.waitUntil to ensure async analysis completes in serverless environments
     if ((request as any).waitUntil) {
       (request as any).waitUntil(
-        triggerAsyncAnalysis(item).catch((err) => {
+        analysisPromise.catch((err) => {
           logger.error('[ai-inbox/items] Async analysis failed:', err);
         })
       );
     } else {
       // Fallback for environments without waitUntil - still fire and forget but log it
       logger.warn('[ai-inbox/items] request.waitUntil not available, analysis might be interrupted');
-      triggerAsyncAnalysis(item).catch((err) => {
+      analysisPromise.catch((err) => {
         logger.error('[ai-inbox/items] Async analysis failed (fallback):', err);
       });
     }
@@ -187,18 +192,35 @@ export async function POST(request: NextRequest) {
  * Trigger async AI analysis for a newly created item
  * This runs in the background without blocking the HTTP response
  */
-async function triggerAsyncAnalysis(item: Item): Promise<void> {
+async function triggerAsyncAnalysis(
+  item: Item,
+  userProfile: UserProfile,
+  supabaseUserClient?: SupabaseClient
+): Promise<void> {
   const logPrefix = `[ai-inbox/items][analysis][${item.id}]`;
 
-  // Use Admin Client to bypass RLS in background task where auth context (cookies) might be lost
-  const supabaseAdmin = createAdminClient();
+  // Prefer service role if available, otherwise fall back to the current user's session client
+  const userClientHasFrom =
+    supabaseUserClient && typeof (supabaseUserClient as any).from === 'function';
+  let supabaseWriter: SupabaseClient | null = userClientHasFrom
+    ? supabaseUserClient
+    : null;
+  try {
+    supabaseWriter = createAdminClient();
+  } catch (error) {
+    logger.warn(
+      `${logPrefix} Admin client unavailable (missing SUPABASE_SERVICE_ROLE_KEY?). Falling back to user session.`,
+      error
+    );
+  }
+
+  if (!supabaseWriter) {
+    logger.error(`${logPrefix} No Supabase client available for analysis. Skipping update.`);
+    return;
+  }
 
   try {
     logger.log(`${logPrefix} Starting async analysis`);
-
-    // Get user settings for personalized analysis
-    const settings = await getSettings();
-    const userProfile = settings?.profile || DEFAULT_USER_PROFILE;
 
     // ATTEMPT CONTENT EXTRACTION: 
     // 1. If YouTube, try to get transcript
@@ -231,7 +253,7 @@ async function triggerAsyncAnalysis(item: Item): Promise<void> {
 
       if (extracted) {
         // Update database with extracted content using Admin Client
-        const { error: updateError } = await supabaseAdmin
+        const { error: updateError } = await supabaseWriter
           .from('ai_inbox_items')
           .update({ raw_content: extracted })
           .eq('id', item.id);
@@ -251,7 +273,7 @@ async function triggerAsyncAnalysis(item: Item): Promise<void> {
 
     if (analysis) {
       // Update item with analysis results using Admin Client
-      const { error: saveError } = await supabaseAdmin
+      const { error: saveError } = await supabaseWriter
         .from('ai_inbox_items')
         .update({ ai_analysis: analysis })
         .eq('id', item.id);
@@ -265,7 +287,7 @@ async function triggerAsyncAnalysis(item: Item): Promise<void> {
       logger.warn(`${logPrefix} No analysis returned from Gemini`);
 
       // FALLBACK: Update with a "Failure" content
-      await supabaseAdmin.from('ai_inbox_items').update({
+      await supabaseWriter.from('ai_inbox_items').update({
         ai_analysis: {
           summary: "L'analyse automatique a échoué (timeout ou erreur de l'IA).",
           actionability: 1,
@@ -282,7 +304,7 @@ async function triggerAsyncAnalysis(item: Item): Promise<void> {
 
     // Ensure we don't leave the item in a "stuck" state if possible
     try {
-      await supabaseAdmin.from('ai_inbox_items').update({
+      await supabaseWriter.from('ai_inbox_items').update({
         ai_analysis: {
           summary: "Erreur critique lors de l'analyse en arrière-plan.",
           actionability: 1,
