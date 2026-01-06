@@ -1,19 +1,19 @@
-'use client';
+"use client";
 
-import { useState, useOptimistic, useTransition, memo, useMemo } from 'react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { useState, useOptimistic, useTransition, memo, useMemo } from "react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+} from "@/components/ui/dropdown-menu";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from '@/components/ui/tooltip';
+} from "@/components/ui/tooltip";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,12 +24,26 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Star, Copy, Pencil, Trash2, Check, MoreVertical, Braces, Sparkles, Loader2 } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { extractVariables, CATEGORY_COLORS, type Prompt } from '@/lib/prompt-library/types';
-import { toast } from 'sonner';
-import { VariableDialog } from './variable-dialog';
-import { EditPromptDialog } from './edit-prompt-dialog';
+import {
+  Star,
+  Copy,
+  Pencil,
+  Trash2,
+  Check,
+  MoreVertical,
+  Braces,
+  Sparkles,
+  Loader2,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import {
+  extractVariables,
+  CATEGORY_COLORS,
+  type Prompt,
+} from "@/lib/prompt-library/types";
+import { toast } from "sonner";
+import { VariableDialog } from "./variable-dialog";
+import { EditPromptDialog } from "./edit-prompt-dialog";
 
 interface PromptListItemProps {
   prompt: Prompt;
@@ -39,11 +53,15 @@ interface PromptListItemProps {
 
 // Optimization: Use memo to prevent re-renders when other prompts in the list are updated.
 // The parent component ensures that the prompt object reference is stable for unchanged items.
-export const PromptListItem = memo(function PromptListItem({ prompt, onDelete, onUpdate }: PromptListItemProps) {
+export const PromptListItem = memo(function PromptListItem({
+  prompt,
+  onDelete,
+  onUpdate,
+}: PromptListItemProps) {
   // React 19: useOptimistic for instant UI feedback - reverts to source value on re-render
   const [optimisticFavorite, setOptimisticFavorite] = useOptimistic(
     prompt.is_favorite,
-    (_current, newValue: boolean) => newValue
+    (_current, newValue: boolean) => newValue,
   );
   const [isPending, startTransition] = useTransition();
 
@@ -54,7 +72,10 @@ export const PromptListItem = memo(function PromptListItem({ prompt, onDelete, o
   const [copied, setCopied] = useState(false);
 
   // Optimization: Memoize variable extraction
-  const variables = useMemo(() => extractVariables(prompt.content), [prompt.content]);
+  const variables = useMemo(
+    () => extractVariables(prompt.content),
+    [prompt.content],
+  );
   const hasVariables = variables.length > 0;
 
   const handleToggleFavorite = () => {
@@ -64,20 +85,22 @@ export const PromptListItem = memo(function PromptListItem({ prompt, onDelete, o
     startTransition(async () => {
       try {
         const response = await fetch(`/api/prompt-library/${prompt.id}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ is_favorite: newFavorite }),
         });
 
-        if (!response.ok) throw new Error('Failed to toggle favorite');
+        if (!response.ok) throw new Error("Failed to toggle favorite");
 
         const updated = await response.json();
         onUpdate(updated);
-        toast.success(newFavorite ? 'Ajouté aux favoris' : 'Retiré des favoris');
+        toast.success(
+          newFavorite ? "Ajouté aux favoris" : "Retiré des favoris",
+        );
       } catch (error) {
-        console.error('Error toggling favorite:', error);
+        console.error("Error toggling favorite:", error);
         // Reverts to source value when component re-renders
-        toast.error('Erreur lors de la mise à jour');
+        toast.error("Erreur lors de la mise à jour");
       }
     });
   };
@@ -88,7 +111,7 @@ export const PromptListItem = memo(function PromptListItem({ prompt, onDelete, o
     } else {
       navigator.clipboard.writeText(prompt.content);
       setCopied(true);
-      toast.success('Copié dans le presse-papier');
+      toast.success("Copié dans le presse-papier");
       setTimeout(() => setCopied(false), 2000);
     }
   };
@@ -97,16 +120,16 @@ export const PromptListItem = memo(function PromptListItem({ prompt, onDelete, o
     setIsDeleting(true);
     try {
       const response = await fetch(`/api/prompt-library/${prompt.id}`, {
-        method: 'DELETE',
+        method: "DELETE",
       });
 
-      if (!response.ok) throw new Error('Failed to delete');
+      if (!response.ok) throw new Error("Failed to delete");
 
       onDelete(prompt.id);
-      toast.success('Prompt supprimé');
+      toast.success("Prompt supprimé");
     } catch (error) {
-      console.error('Error deleting prompt:', error);
-      toast.error('Erreur lors de la suppression');
+      console.error("Error deleting prompt:", error);
+      toast.error("Erreur lors de la suppression");
       setIsDeleting(false);
       setShowDeleteDialog(false);
     }
@@ -114,23 +137,46 @@ export const PromptListItem = memo(function PromptListItem({ prompt, onDelete, o
 
   return (
     <>
-      <div className={cn("flex items-center gap-4 p-4 border rounded-lg hover:border-primary/50 transition-colors", prompt.status === 'draft' && "border-orange-500/30 bg-orange-500/5 hover:border-orange-500/50")}>
+      <div
+        className={cn(
+          "flex items-center gap-4 p-4 border rounded-lg hover:border-primary/50 transition-colors",
+          prompt.status === "draft" &&
+            "border-orange-500/30 bg-orange-500/5 hover:border-orange-500/50",
+        )}
+      >
         {/* Favorite */}
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
               variant="ghost"
               size="icon"
-              className={cn('h-8 w-8 flex-shrink-0', optimisticFavorite && 'text-yellow-500', isPending && 'opacity-70')}
+              className={cn(
+                "h-8 w-8 flex-shrink-0",
+                optimisticFavorite && "text-yellow-500",
+                isPending && "opacity-70",
+              )}
               onClick={handleToggleFavorite}
               disabled={isPending}
-              aria-label={optimisticFavorite ? "Retirer des favoris" : "Ajouter aux favoris"}
+              aria-label={
+                optimisticFavorite
+                  ? "Retirer des favoris"
+                  : "Ajouter aux favoris"
+              }
             >
-              <Star className={cn('h-4 w-4', optimisticFavorite && 'fill-yellow-500')} />
+              <Star
+                className={cn(
+                  "h-4 w-4",
+                  optimisticFavorite && "fill-yellow-500",
+                )}
+              />
             </Button>
           </TooltipTrigger>
           <TooltipContent>
-            <p>{optimisticFavorite ? "Retirer des favoris" : "Ajouter aux favoris"}</p>
+            <p>
+              {optimisticFavorite
+                ? "Retirer des favoris"
+                : "Ajouter aux favoris"}
+            </p>
           </TooltipContent>
         </Tooltip>
 
@@ -155,13 +201,19 @@ export const PromptListItem = memo(function PromptListItem({ prompt, onDelete, o
                 </TooltipContent>
               </Tooltip>
             )}
-            {prompt.status === 'draft' && (
-              <Badge variant="outline" className="text-[10px] h-4 py-0 bg-orange-500/10 text-orange-600 border-orange-500/20">
+            {prompt.status === "draft" && (
+              <Badge
+                variant="outline"
+                className="text-[10px] h-4 py-0 bg-orange-500/10 text-orange-600 border-orange-500/20"
+              >
                 Brouillon
               </Badge>
             )}
             {prompt.is_automated && (
-              <Badge variant="outline" className="text-[10px] h-4 py-0 bg-indigo-500/10 text-indigo-600 border-indigo-500/20">
+              <Badge
+                variant="outline"
+                className="text-[10px] h-4 py-0 bg-indigo-500/10 text-indigo-600 border-indigo-500/20"
+              >
                 <Sparkles className="h-2.5 w-2.5 mr-0.5" />
                 Auto
               </Badge>
@@ -170,7 +222,10 @@ export const PromptListItem = memo(function PromptListItem({ prompt, onDelete, o
           <div className="flex items-center gap-1.5 mt-1">
             <Badge
               variant="outline"
-              className={cn('capitalize text-xs', CATEGORY_COLORS[prompt.category])}
+              className={cn(
+                "capitalize text-xs",
+                CATEGORY_COLORS[prompt.category],
+              )}
             >
               {prompt.category}
             </Badge>
@@ -180,7 +235,21 @@ export const PromptListItem = memo(function PromptListItem({ prompt, onDelete, o
               </Badge>
             ))}
             {prompt.tags.length > 2 && (
-              <span className="text-xs text-muted-foreground">+{prompt.tags.length - 2}</span>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span
+                    className="text-xs text-muted-foreground cursor-help"
+                    tabIndex={0}
+                  >
+                    +{prompt.tags.length - 2}
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="max-w-[200px] break-words">
+                    {prompt.tags.slice(2).join(", ")}
+                  </p>
+                </TooltipContent>
+              </Tooltip>
             )}
           </div>
         </div>
@@ -193,13 +262,17 @@ export const PromptListItem = memo(function PromptListItem({ prompt, onDelete, o
                 variant="outline"
                 size="sm"
                 onClick={handleCopy}
-                aria-label={hasVariables ? 'Remplir & copier' : 'Copier'}
+                aria-label={hasVariables ? "Remplir & copier" : "Copier"}
               >
-                {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                {copied ? (
+                  <Check className="h-3.5 w-3.5" />
+                ) : (
+                  <Copy className="h-3.5 w-3.5" />
+                )}
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              <p>{hasVariables ? 'Remplir & copier' : 'Copier'}</p>
+              <p>{hasVariables ? "Remplir & copier" : "Copier"}</p>
             </TooltipContent>
           </Tooltip>
 
@@ -207,7 +280,12 @@ export const PromptListItem = memo(function PromptListItem({ prompt, onDelete, o
             <Tooltip>
               <TooltipTrigger asChild>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Plus d'options">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    aria-label="Plus d'options"
+                  >
                     <MoreVertical className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -221,7 +299,10 @@ export const PromptListItem = memo(function PromptListItem({ prompt, onDelete, o
                 <Pencil className="mr-2 h-4 w-4" />
                 Modifier
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setShowDeleteDialog(true)} className="text-destructive">
+              <DropdownMenuItem
+                onClick={() => setShowDeleteDialog(true)}
+                className="text-destructive"
+              >
                 <Trash2 className="mr-2 h-4 w-4" />
                 Supprimer
               </DropdownMenuItem>
@@ -251,13 +332,18 @@ export const PromptListItem = memo(function PromptListItem({ prompt, onDelete, o
         <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Êtes-vous sûr de vouloir supprimer ce prompt ?</AlertDialogTitle>
+              <AlertDialogTitle>
+                Êtes-vous sûr de vouloir supprimer ce prompt ?
+              </AlertDialogTitle>
               <AlertDialogDescription>
-                Cette action est irréversible. Le prompt &quot;{prompt.title}&quot; sera définitivement supprimé.
+                Cette action est irréversible. Le prompt &quot;{prompt.title}
+                &quot; sera définitivement supprimé.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel disabled={isDeleting}>Annuler</AlertDialogCancel>
+              <AlertDialogCancel disabled={isDeleting}>
+                Annuler
+              </AlertDialogCancel>
               <AlertDialogAction
                 onClick={(e) => {
                   e.preventDefault();
@@ -266,7 +352,9 @@ export const PromptListItem = memo(function PromptListItem({ prompt, onDelete, o
                 disabled={isDeleting}
                 className="bg-destructive hover:bg-destructive/90"
               >
-                {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                {isDeleting ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : null}
                 Supprimer
               </AlertDialogAction>
             </AlertDialogFooter>
