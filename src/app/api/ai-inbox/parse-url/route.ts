@@ -22,7 +22,16 @@ function isSafeUrl(url: string): boolean {
       return false;
     }
 
+    // Block IPv4-mapped IPv6 addresses (SSRF bypass vector)
+    // These normalize to [::ffff:xx.xx.xx.xx] or [::ffff:xxxx:xxxx]
+    if (hostname.includes('::ffff:')) {
+      return false;
+    }
+
     // Block private IP ranges (basic check, not exhaustive against all formats like hex/octal)
+    // Note: 'new URL()' normalizes integer/hex/octal IPs to standard dot-decimal notation,
+    // so checking '127.' covers '2130706433' (integer) and '0x7f000001' (hex).
+
     // 127.0.0.0/8
     if (hostname.startsWith('127.')) {
       return false;
@@ -61,6 +70,9 @@ function isSafeUrl(url: string): boolean {
     return false;
   }
 }
+
+// Export for testing
+export const _isSafeUrl = isSafeUrl;
 
 export async function GET(request: NextRequest) {
   // 1. Authentication Check
