@@ -225,7 +225,7 @@ async function triggerAsyncAnalysis(
     // ATTEMPT CONTENT EXTRACTION: 
     // 1. If YouTube, try to get transcript
     // 2. Otherwise (or if transcript fails), try Jina Reader scraping
-    let currentItem = { ...item };
+    const currentItem = { ...item };
     if (item.url && !item.raw_content) {
       let extracted: string | null = null;
       const isYouTube = item.url.includes('youtube.com') || item.url.includes('youtu.be');
