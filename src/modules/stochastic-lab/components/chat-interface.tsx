@@ -175,7 +175,7 @@ export function ChatInterface({
             message={message}
             onRunSimulation={
               message.simulation?.status === 'pending'
-                ? () => handleRunSimulation(message.id, message.simulation!.config)
+                ? handleRunSimulation
                 : undefined
             }
             isSimulationRunning={runningSimulationId === message.id}

@@ -4,14 +4,14 @@ import { memo, useMemo } from 'react';
 import { Card } from '@/components/ui/card';
 import { User, Bot, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { ChatMessage } from '@/lib/stochastic-lab/types';
+import type { ChatMessage, SimulationConfig } from '@/lib/stochastic-lab/types';
 import { SimulationResult } from './simulation-result';
 import 'katex/dist/katex.min.css';
 import { InlineMath, BlockMath } from 'react-katex';
 
 interface MessageBubbleProps {
   message: ChatMessage;
-  onRunSimulation?: () => void;
+  onRunSimulation?: (messageId: string, config: SimulationConfig) => void;
   isSimulationRunning?: boolean;
 }
 
@@ -149,7 +149,7 @@ export const MessageBubble = memo(function MessageBubble({
         {message.simulation && message.simulation.status === 'pending' && onRunSimulation && (
           <div className="mt-4 flex items-center gap-2">
             <button
-              onClick={onRunSimulation}
+              onClick={() => onRunSimulation(message.id, message.simulation!.config)}
               disabled={isSimulationRunning}
               className={cn(
                 'px-4 py-2 rounded-lg text-sm font-medium transition-all',
