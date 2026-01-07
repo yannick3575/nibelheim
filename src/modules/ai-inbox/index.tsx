@@ -1,10 +1,9 @@
 'use client';
 
 import { useEffect, useState, useCallback, useMemo } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Inbox, RefreshCw, Plus, Settings, Loader2, Sparkles } from 'lucide-react';
-import { InboxItemCard } from './components/inbox-item-card';
+import { Inbox, RefreshCw, Plus, Settings } from 'lucide-react';
+import { InboxList } from './components/inbox-list';
 import { AddItemDialog } from './components/add-item-dialog';
 import { SettingsDialog } from './components/settings-dialog';
 import { FilterBar } from './components/filter-bar';
@@ -215,6 +214,10 @@ export default function AIInboxModule() {
     fetchItems();
   }, [fetchItems]);
 
+  const handleAddItem = useCallback(() => {
+    setAddDialogOpen(true);
+  }, []);
+
   return (
     <div className="space-y-4 sm:space-y-6 h-full flex flex-col">
       {/* Header */}
@@ -249,7 +252,7 @@ export default function AIInboxModule() {
             <RefreshCw className={`sm:mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
             <span className="hidden sm:inline">Actualiser</span>
           </Button>
-          <Button size="sm" onClick={() => setAddDialogOpen(true)}>
+          <Button size="sm" onClick={handleAddItem}>
             <Plus className="sm:mr-2 h-4 w-4" />
             <span className="hidden sm:inline">Ajouter</span>
           </Button>
@@ -273,63 +276,18 @@ export default function AIInboxModule() {
 
       {/* Content */}
       <div className="flex-1 min-h-0">
-        {loading && items.length === 0 ? (
-          <div className="h-64 flex items-center justify-center border rounded-lg border-dashed">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-          </div>
-        ) : error ? (
-          <Card className="border-destructive/50">
-            <CardHeader>
-              <CardTitle className="text-destructive">Erreur</CardTitle>
-              <CardDescription>{error}</CardDescription>
-            </CardHeader>
-          </Card>
-        ) : filteredItems.length > 0 ? (
-          <div className="space-y-3 sm:space-y-4">
-            {filteredItems.map((item) => (
-              <InboxItemCard
-                key={item.id}
-                item={item}
-                onToggleRead={handleToggleRead}
-                onToggleFavorite={handleToggleFavorite}
-                onArchive={handleArchive}
-                onDelete={handleDelete}
-                onAnalyze={handleAnalyze}
-              />
-            ))}
-          </div>
-        ) : items.length > 0 ? (
-          <Card className="border-dashed">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Inbox className="h-5 w-5" />
-                Aucun résultat
-              </CardTitle>
-              <CardDescription>
-                Aucun item ne correspond à vos filtres. Essayez de modifier vos critères.
-              </CardDescription>
-            </CardHeader>
-          </Card>
-        ) : (
-          <Card className="border-dashed">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-aurora-cyan" />
-                Commencez votre veille
-              </CardTitle>
-              <CardDescription>
-                Votre inbox est vide. Ajoutez des liens YouTube, articles, newsletters
-                ou autres contenus pour recevoir des analyses IA personnalisées.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button onClick={() => setAddDialogOpen(true)}>
-                <Plus className="mr-2 h-4 w-4" />
-                Ajouter un premier contenu
-              </Button>
-            </CardContent>
-          </Card>
-        )}
+        <InboxList
+          items={filteredItems}
+          loading={loading}
+          error={error}
+          hasNoItems={items.length === 0}
+          onToggleRead={handleToggleRead}
+          onToggleFavorite={handleToggleFavorite}
+          onArchive={handleArchive}
+          onDelete={handleDelete}
+          onAnalyze={handleAnalyze}
+          onAddItem={handleAddItem}
+        />
       </div>
 
       {/* Dialogs */}

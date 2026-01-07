@@ -47,7 +47,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     // ATTEMPT CONTENT EXTRACTION: 
     // If URL exists but no raw_content, try to extract it before analysis
-    let currentItem = { ...item };
+    const currentItem = { ...item };
     if (item.url && !item.raw_content) {
       let extracted: string | null = null;
 
