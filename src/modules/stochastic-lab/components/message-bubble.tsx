@@ -2,7 +2,8 @@
 
 import { memo, useMemo } from 'react';
 import { Card } from '@/components/ui/card';
-import { User, Bot, Info } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { User, Bot, Info, Loader2, Play } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { ChatMessage, SimulationConfig } from '@/lib/stochastic-lab/types';
 import { SimulationResult } from './simulation-result';
@@ -148,19 +149,27 @@ export const MessageBubble = memo(function MessageBubble({
         {/* Pending Simulation */}
         {message.simulation && message.simulation.status === 'pending' && onRunSimulation && (
           <div className="mt-4 flex items-center gap-2">
-            <button
+            <Button
               onClick={() => onRunSimulation(message.id, message.simulation!.config)}
               disabled={isSimulationRunning}
+              aria-label={isSimulationRunning ? 'Simulation en cours' : 'Lancer la simulation'}
               className={cn(
-                'px-4 py-2 rounded-lg text-sm font-medium transition-all',
-                'bg-gradient-to-r from-aurora-violet to-aurora-magenta',
-                'hover:from-aurora-violet/90 hover:to-aurora-magenta/90',
-                'disabled:opacity-50 disabled:cursor-not-allowed',
-                'text-white'
+                'transition-all bg-gradient-to-r from-aurora-violet to-aurora-magenta text-white hover:from-aurora-violet/90 hover:to-aurora-magenta/90',
+                isSimulationRunning && 'opacity-80'
               )}
             >
-              {isSimulationRunning ? 'En cours...' : 'Lancer la simulation'}
-            </button>
+              {isSimulationRunning ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  En cours...
+                </>
+              ) : (
+                <>
+                  <Play className="mr-2 h-4 w-4 fill-current" aria-hidden="true" />
+                  Lancer la simulation
+                </>
+              )}
+            </Button>
           </div>
         )}
 
