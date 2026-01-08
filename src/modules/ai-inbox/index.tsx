@@ -1,5 +1,17 @@
 'use client';
 
+<<<<<<< HEAD
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { createClient } from '@/lib/supabase/client';
+import { InboxList } from './components/inbox-list';
+import { InboxHeader } from './components/inbox-header';
+import { FilterBar } from './components/filter-bar';
+import { AddItemDialog } from './components/add-item-dialog';
+import { SettingsDialog } from './components/settings-dialog';
+import type { Item, Status, StatusFilter, CategoryFilter, SourceTypeFilter } from '@/types/ai-inbox';
+
+export function AIInboxModule() {
+=======
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Inbox, RefreshCw, Plus, Settings } from 'lucide-react';
@@ -15,6 +27,7 @@ type CategoryFilter = Category | 'all';
 type SourceTypeFilter = SourceType | 'all';
 
 export default function AIInboxModule() {
+>>>>>>> remotes/origin/palette-message-bubble-ux-9879608455324157822
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -218,6 +231,21 @@ export default function AIInboxModule() {
     setAddDialogOpen(true);
   }, []);
 
+<<<<<<< HEAD
+  const handleOpenSettings = useCallback(() => {
+    setSettingsDialogOpen(true);
+  }, []);
+
+  return (
+    <div className="space-y-4 sm:space-y-6 h-full flex flex-col">
+      {/* Header */}
+      <InboxHeader
+        loading={loading}
+        onRefresh={handleRefresh}
+        onAddItem={handleAddItem}
+        onOpenSettings={handleOpenSettings}
+      />
+=======
   return (
     <div className="space-y-4 sm:space-y-6 h-full flex flex-col">
       {/* Header */}
@@ -258,6 +286,7 @@ export default function AIInboxModule() {
           </Button>
         </div>
       </div>
+>>>>>>> remotes/origin/palette-message-bubble-ux-9879608455324157822
 
       {/* Filter Bar */}
       <FilterBar
