@@ -33,7 +33,7 @@ describe('/api/tech-watch/articles/[id]', () => {
       auth: {
         getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'user-123' } } }),
       },
-    } as any);
+    } as unknown as Awaited<ReturnType<typeof createClient>>);
   });
 
   const createRequest = (method: string, body?: unknown) => {

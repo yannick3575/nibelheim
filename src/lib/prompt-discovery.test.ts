@@ -108,7 +108,7 @@ describe('prompt-discovery', () => {
       vi.mocked(fetch).mockResolvedValue({
         ok: true,
         text: () => Promise.resolve('remote content'),
-      } as any);
+      } as unknown as Response);
 
       const mockResponse = {
         response: {
@@ -131,7 +131,7 @@ describe('prompt-discovery', () => {
       vi.mocked(fetch).mockResolvedValue({
         ok: true,
         text: () => Promise.resolve('content'),
-      } as any);
+      } as unknown as Response);
 
       const mockResponse = {
         response: {
@@ -140,7 +140,7 @@ describe('prompt-discovery', () => {
       };
       mocks.generateContentMock.mockResolvedValue(mockResponse);
 
-      vi.mocked(createPrompt).mockResolvedValue({ id: 'new-id' } as any);
+      vi.mocked(createPrompt).mockResolvedValue({ id: 'new-id' } as Awaited<ReturnType<typeof createPrompt>>);
 
       const result = await discoverAndSavePrompts('user-1');
 

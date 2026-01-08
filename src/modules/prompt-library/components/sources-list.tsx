@@ -4,7 +4,6 @@ import { useEffect, useState, useCallback, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Badge } from '@/components/ui/badge';
 import { Plus, Database, Sparkles, Loader2, RefreshCw } from 'lucide-react';
 import { SourceCard } from './source-card';
 import { AddEditSourceDialog } from './add-edit-source-dialog';

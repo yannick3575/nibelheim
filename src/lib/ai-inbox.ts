@@ -14,7 +14,6 @@ import type {
   CreateItemInput,
   UpdateItemInput,
   Settings,
-  SettingsRow,
   UserProfile,
   SourceType,
   Category,

@@ -16,12 +16,7 @@ export default function StochasticLabModule() {
   const [isCreating, setIsCreating] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
-  // Fetch conversations on mount
-  useEffect(() => {
-    fetchConversations();
-  }, []);
-
-  const fetchConversations = async () => {
+  const fetchConversations = useCallback(async () => {
     try {
       const response = await fetch('/api/stochastic-lab/conversations');
       if (!response.ok) throw new Error('Failed to fetch conversations');
@@ -29,16 +24,24 @@ export default function StochasticLabModule() {
       setConversations(data);
 
       // Auto-select first conversation if none selected
-      if (data.length > 0 && !selectedConversationId) {
-        setSelectedConversationId(data[0].id);
-      }
+      setSelectedConversationId((current) => {
+        if (data.length > 0 && !current) {
+          return data[0].id;
+        }
+        return current;
+      });
     } catch (error) {
       console.error('Error fetching conversations:', error);
       toast.error('Erreur lors du chargement des conversations');
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
+
+  // Fetch conversations on mount
+  useEffect(() => {
+    fetchConversations();
+  }, [fetchConversations]);
 
   const handleCreateConversation = async () => {
     setIsCreating(true);

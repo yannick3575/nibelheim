@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { Send, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -25,9 +25,12 @@ export function ChatInterface({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Web Worker for simulations (keeps UI responsive)
-  const { runSimulation, state: workerState } = useSimulationWorker();
+  const { runSimulation } = useSimulationWorker();
 
-  const messages = conversation?.messages || [];
+  const messages = useMemo(
+    () => conversation?.messages || [],
+    [conversation?.messages]
+  );
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {

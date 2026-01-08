@@ -5,11 +5,11 @@ import type { Prompt } from '@/lib/prompt-library/types';
 
 // Mock child components to isolate PromptList testing
 vi.mock('./prompt-card', () => ({
-  PromptCard: ({ prompt }: { prompt: any }) => <div data-testid="prompt-card">{prompt.title}</div>
+  PromptCard: ({ prompt }: { prompt: Prompt }) => <div data-testid="prompt-card">{prompt.title}</div>
 }));
 
 vi.mock('./prompt-list-item', () => ({
-  PromptListItem: ({ prompt }: { prompt: any }) => <div data-testid="prompt-list-item">{prompt.title}</div>
+  PromptListItem: ({ prompt }: { prompt: Prompt }) => <div data-testid="prompt-list-item">{prompt.title}</div>
 }));
 
 const mockPrompts: Prompt[] = [

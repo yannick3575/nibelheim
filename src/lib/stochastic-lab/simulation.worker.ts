@@ -10,8 +10,6 @@ import type {
   MarkovChainConfig,
   RandomWalkConfig,
   Statistics,
-  HistogramData,
-  ConvergenceData,
   DistributionParams,
 } from './types';
 

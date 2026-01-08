@@ -25,7 +25,6 @@ import type {
   DiscoverySource,
   DiscoverySourceType,
   DiscoverySourceCategory,
-  DISCOVERY_SOURCE_CATEGORIES,
 } from '@/lib/prompt-library/types';
 
 interface AddEditSourceDialogProps {

@@ -164,8 +164,9 @@ export async function POST(request: NextRequest) {
     const analysisPromise = triggerAsyncAnalysis(item, userProfile, supabase);
 
     // Use request.waitUntil to ensure async analysis completes in serverless environments
-    if ((request as any).waitUntil) {
-      (request as any).waitUntil(
+    const requestWithWaitUntil = request as Request & { waitUntil?: (promise: Promise<unknown>) => void };
+    if (requestWithWaitUntil.waitUntil) {
+      requestWithWaitUntil.waitUntil(
         analysisPromise.catch((err) => {
           logger.error('[ai-inbox/items] Async analysis failed:', err);
         })
@@ -201,7 +202,7 @@ async function triggerAsyncAnalysis(
 
   // Prefer service role if available, otherwise fall back to the current user's session client
   const userClientHasFrom =
-    supabaseUserClient && typeof (supabaseUserClient as any).from === 'function';
+    supabaseUserClient && typeof supabaseUserClient.from === 'function';
   let supabaseWriter: SupabaseClient | null = userClientHasFrom
     ? supabaseUserClient
     : null;

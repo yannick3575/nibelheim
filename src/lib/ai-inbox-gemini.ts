@@ -5,7 +5,7 @@
  * The analysis is personalized based on the user's profile (stack, projects, interests).
  */
 
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenerativeAI, type GenerateContentResult } from '@google/generative-ai';
 import type { Item, AIAnalysis, UserProfile } from '@/types/ai-inbox';
 import { logger } from '@/lib/logger';
 
@@ -171,8 +171,8 @@ export async function analyzeItem(
         setTimeout(() => reject(new Error('Gemini API timeout')), ANALYSIS_TIMEOUT)
       );
 
-      const result = await Promise.race([generatePromise, timeoutPromise]);
-      const response = (result as any).response;
+      const result = await Promise.race([generatePromise, timeoutPromise]) as GenerateContentResult;
+      const response = result.response;
       const text = response.text();
 
       const analysis = parseGeminiResponse(text);
