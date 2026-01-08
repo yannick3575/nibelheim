@@ -223,48 +223,39 @@ async function triggerAsyncAnalysis(
   try {
     logger.log(`${logPrefix} Starting async analysis`);
 
-    // ATTEMPT CONTENT EXTRACTION: 
+    // ATTEMPT CONTENT EXTRACTION (in memory only - no DB update yet)
     // 1. If YouTube, try to get transcript
     // 2. Otherwise (or if transcript fails), try Jina Reader scraping
     const currentItem = { ...item };
+    let extractedContent: string | null = null;
+
     if (item.url && !item.raw_content) {
-      let extracted: string | null = null;
       const isYouTube = item.url.includes('youtube.com') || item.url.includes('youtu.be');
 
       if (isYouTube) {
         logger.log(`${logPrefix} Attempting YouTube transcript fetch`);
-        extracted = await getYouTubeTranscript(item.url);
-        if (extracted) {
-          logger.log(`${logPrefix} Obtained YouTube transcript (${extracted.length} chars)`);
+        extractedContent = await getYouTubeTranscript(item.url);
+        if (extractedContent) {
+          logger.log(`${logPrefix} Obtained YouTube transcript (${extractedContent.length} chars)`);
         } else {
           logger.warn(`${logPrefix} YouTube transcript not available`);
         }
       }
 
       // Fallback to Jina Reader if not YouTube or if transcript failed
-      if (!extracted) {
+      if (!extractedContent) {
         logger.log(`${logPrefix} Attempting Jina scraping`);
-        extracted = await extractUrlContent(item.url);
-        if (extracted) {
-          logger.log(`${logPrefix} Updated raw_content via Jina scraping (${extracted.length} chars)`);
+        extractedContent = await extractUrlContent(item.url);
+        if (extractedContent) {
+          logger.log(`${logPrefix} Extracted content via Jina scraping (${extractedContent.length} chars)`);
         } else {
           logger.warn(`${logPrefix} Jina scraping failed`);
         }
       }
 
-      if (extracted) {
-        // Update database with extracted content using Admin Client
-        const { error: updateError } = await supabaseWriter
-          .from('ai_inbox_items')
-          .update({ raw_content: extracted })
-          .eq('id', item.id);
-
-        if (!updateError) {
-          currentItem.raw_content = extracted;
-          logger.log(`${logPrefix} Saved extracted content to database`);
-        } else {
-          logger.error(`${logPrefix} Failed to save extracted content:`, updateError);
-        }
+      // Update in-memory item for analysis (NOT saving to DB yet)
+      if (extractedContent) {
+        currentItem.raw_content = extractedContent;
       }
     }
 
@@ -272,33 +263,39 @@ async function triggerAsyncAnalysis(
     logger.log(`${logPrefix} Starting Gemini analysis`);
     const analysis = await analyzeItem(currentItem, userProfile);
 
-    if (analysis) {
-      // Update item with analysis results using Admin Client
-      const { error: saveError } = await supabaseWriter
-        .from('ai_inbox_items')
-        .update({ ai_analysis: analysis })
-        .eq('id', item.id);
+    // SINGLE DB UPDATE: Save both raw_content and ai_analysis together
+    // This prevents multiple real-time subscription triggers
+    const updatePayload: Record<string, unknown> = {};
 
-      if (!saveError) {
-        logger.log(`${logPrefix} Analysis saved successfully`);
-      } else {
-        logger.error(`${logPrefix} Failed to save analysis to database:`, saveError);
-      }
+    if (extractedContent) {
+      updatePayload.raw_content = extractedContent;
+    }
+
+    if (analysis) {
+      updatePayload.ai_analysis = analysis;
     } else {
       logger.warn(`${logPrefix} No analysis returned from Gemini`);
+      updatePayload.ai_analysis = {
+        summary: "L'analyse automatique a échoué (timeout ou erreur de l'IA).",
+        actionability: 1,
+        complexity: 1,
+        project_ideas: ["Veuillez réessayer manuellement l'analyse."],
+        relevance_to_profile: "Analyse indisponible.",
+        suggested_category: item.category,
+        suggested_tags: item.tags || []
+      };
+    }
 
-      // FALLBACK: Update with a "Failure" content
-      await supabaseWriter.from('ai_inbox_items').update({
-        ai_analysis: {
-          summary: "L'analyse automatique a échoué (timeout ou erreur de l'IA).",
-          actionability: 1,
-          complexity: 1,
-          project_ideas: ["Veuillez réessayer manuellement l'analyse."],
-          relevance_to_profile: "Analyse indisponible.",
-          suggested_category: item.category,
-          suggested_tags: item.tags || []
-        }
-      }).eq('id', item.id);
+    // Perform single atomic update
+    const { error: saveError } = await supabaseWriter
+      .from('ai_inbox_items')
+      .update(updatePayload)
+      .eq('id', item.id);
+
+    if (!saveError) {
+      logger.log(`${logPrefix} Analysis and content saved successfully (single update)`);
+    } else {
+      logger.error(`${logPrefix} Failed to save to database:`, saveError);
     }
   } catch (error) {
     logger.error(`${logPrefix} Error in async analysis flow:`, error);

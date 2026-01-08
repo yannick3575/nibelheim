@@ -75,9 +75,26 @@ export default function AIInboxModule() {
             });
           } else if (payload.eventType === 'UPDATE') {
             const updatedItem = payload.new as Item;
-            setItems((prev) =>
-              prev.map((item) => (item.id === updatedItem.id ? updatedItem : item))
-            );
+            setItems((prev) => {
+              const existingItem = prev.find((item) => item.id === updatedItem.id);
+
+              // Skip update if nothing meaningful changed
+              // This prevents unnecessary re-renders during analysis
+              if (existingItem) {
+                const hasAnalysisChange =
+                  JSON.stringify(existingItem.ai_analysis) !== JSON.stringify(updatedItem.ai_analysis);
+                const hasStatusChange = existingItem.status !== updatedItem.status;
+                const hasFavoriteChange = existingItem.is_favorite !== updatedItem.is_favorite;
+                const hasContentChange = existingItem.raw_content !== updatedItem.raw_content;
+
+                // Only update if there's a meaningful change
+                if (!hasAnalysisChange && !hasStatusChange && !hasFavoriteChange && !hasContentChange) {
+                  return prev;
+                }
+              }
+
+              return prev.map((item) => (item.id === updatedItem.id ? updatedItem : item));
+            });
           } else if (payload.eventType === 'DELETE') {
             const deletedId = payload.old.id;
             setItems((prev) => prev.filter((item) => item.id !== deletedId));
