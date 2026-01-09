@@ -28,21 +28,13 @@ export default function PromptLibraryModule() {
   // UI State
   const [activeTab, setActiveTab] = useState<TabValue>('prompts');
   const [viewMode, setViewMode] = useState<ViewMode>('cards');
-  const [searchQuery, setSearchQuery] = useState('');
+  // Optimization: searchQuery now represents the debounced/active search
+  // The immediate input state is managed inside FilterBar
+  const [activeSearch, setActiveSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<PromptCategory | 'all'>('all');
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState<StatusFilter>('published');
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
-
-  // Debounced search
-  const [debouncedSearch, setDebouncedSearch] = useState('');
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearch(searchQuery);
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [searchQuery]);
 
   // Fetch draft count for badge
   const fetchDraftCount = useCallback(async () => {
@@ -65,7 +57,7 @@ export default function PromptLibraryModule() {
       const params = new URLSearchParams();
       if (selectedCategory !== 'all') params.append('category', selectedCategory);
       if (showFavoritesOnly) params.append('favorites', 'true');
-      if (debouncedSearch) params.append('search', debouncedSearch);
+      if (activeSearch) params.append('search', activeSearch);
       if (selectedStatus !== 'published') params.append('status', selectedStatus);
 
       const response = await fetch(`/api/prompt-library?${params.toString()}`);
@@ -79,7 +71,7 @@ export default function PromptLibraryModule() {
     } finally {
       setLoading(false);
     }
-  }, [selectedCategory, showFavoritesOnly, debouncedSearch, selectedStatus]);
+  }, [selectedCategory, showFavoritesOnly, activeSearch, selectedStatus]);
 
   // Handle discover
   const handleDiscover = async () => {
@@ -220,8 +212,8 @@ export default function PromptLibraryModule() {
             onCategoryChange={setSelectedCategory}
             showFavoritesOnly={showFavoritesOnly}
             onShowFavoritesChange={setShowFavoritesOnly}
-            searchQuery={searchQuery}
-            onSearchChange={setSearchQuery}
+            searchQuery={activeSearch}
+            onSearchChange={setActiveSearch}
             selectedStatus={selectedStatus}
             onStatusChange={setSelectedStatus}
             draftCount={draftCount}
@@ -260,15 +252,15 @@ export default function PromptLibraryModule() {
                 <CardContent className="py-12 text-center">
                   <BookText className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                   <p className="text-muted-foreground mb-4">
-                    {searchQuery || selectedCategory !== 'all' || showFavoritesOnly
+                    {activeSearch || selectedCategory !== 'all' || showFavoritesOnly
                       ? 'Aucun prompt ne correspond aux filtres.'
                       : 'Aucun prompt enregistré. Créez votre premier prompt !'}
                   </p>
-                  {(searchQuery || selectedCategory !== 'all' || showFavoritesOnly) ? (
+                  {(activeSearch || selectedCategory !== 'all' || showFavoritesOnly) ? (
                     <Button
                       variant="outline"
                       onClick={() => {
-                        setSearchQuery('');
+                        setActiveSearch('');
                         setSelectedCategory('all');
                         setShowFavoritesOnly(false);
                       }}
