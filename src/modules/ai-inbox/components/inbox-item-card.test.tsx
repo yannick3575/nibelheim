@@ -26,6 +26,12 @@ vi.mock('@/components/ui/button', () => ({
   Button: ({ children, onClick, ...props }: { children: ReactNode; onClick?: () => void } & Record<string, unknown>) => <button onClick={onClick} {...props}>{children}</button>,
 }));
 
+vi.mock('@/components/ui/tooltip', () => ({
+  Tooltip: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+  TooltipContent: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+  TooltipTrigger: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+}));
+
 vi.mock('lucide-react', () => ({
   ExternalLink: () => <span>ExternalLink</span>,
   Check: () => <span>Check</span>,
@@ -70,7 +76,7 @@ describe('InboxItemCard', () => {
   it('handles toggle read', () => {
     render(<InboxItemCard item={mockItem} {...mockHandlers} />);
 
-    const readButton = screen.getByTitle('Marquer comme lu');
+    const readButton = screen.getByRole('button', { name: 'Marquer comme lu' });
     fireEvent.click(readButton);
 
     // We can't easily assert the async transition call in this mock setup without more effort,
