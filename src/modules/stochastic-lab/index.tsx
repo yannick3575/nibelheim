@@ -43,7 +43,7 @@ export default function StochasticLabModule() {
     fetchConversations();
   }, [fetchConversations]);
 
-  const handleCreateConversation = async () => {
+  const handleCreateConversation = useCallback(async () => {
     setIsCreating(true);
     try {
       const response = await fetch('/api/stochastic-lab/conversations', {
@@ -64,9 +64,9 @@ export default function StochasticLabModule() {
     } finally {
       setIsCreating(false);
     }
-  };
+  }, []);
 
-  const handleDeleteConversation = async (id: string) => {
+  const handleDeleteConversation = useCallback(async (id: string) => {
     try {
       const response = await fetch(`/api/stochastic-lab/conversations/${id}`, {
         method: 'DELETE',
@@ -87,7 +87,7 @@ export default function StochasticLabModule() {
       console.error('Error deleting conversation:', error);
       toast.error('Erreur lors de la suppression');
     }
-  };
+  }, [conversations, selectedConversationId]);
 
   const handleConversationUpdate = useCallback(
     async (messages: ChatMessage[]) => {
