@@ -66,33 +66,16 @@ describe('CreatePromptDialog', () => {
     expect(screen.getByRole('button', { name: /créer/i })).toBeInTheDocument();
   });
 
-  it('should show error toast when submitting without title', async () => {
-    const user = userEvent.setup();
-    render(<CreatePromptDialog {...defaultProps} />);
-
-    const contentInput = screen.getByLabelText('Contenu *');
-    await user.type(contentInput, 'Some content');
-
-    const createButton = screen.getByRole('button', { name: /créer/i });
-    await user.click(createButton);
-
-    expect(toast.error).toHaveBeenCalledWith('Le titre et le contenu sont requis');
-    expect(mockFetch).not.toHaveBeenCalled();
-  });
-
-  it('should show error toast when submitting without content', async () => {
-    const user = userEvent.setup();
+  it('should have required attributes on inputs', () => {
     render(<CreatePromptDialog {...defaultProps} />);
 
     const titleInput = screen.getByLabelText('Titre *');
-    await user.type(titleInput, 'Some title');
+    const contentInput = screen.getByLabelText('Contenu *');
 
-    const createButton = screen.getByRole('button', { name: /créer/i });
-    await user.click(createButton);
-
-    expect(toast.error).toHaveBeenCalledWith('Le titre et le contenu sont requis');
-    expect(mockFetch).not.toHaveBeenCalled();
+    expect(titleInput).toBeRequired();
+    expect(contentInput).toBeRequired();
   });
+
 
   it('should create prompt with valid data', async () => {
     const user = userEvent.setup();

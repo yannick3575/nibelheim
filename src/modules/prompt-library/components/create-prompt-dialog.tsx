@@ -109,6 +109,8 @@ export function CreatePromptDialog({ open, onOpenChange, onPromptCreated }: Crea
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               maxLength={200}
+              required
+              autoFocus
             />
           </div>
 
@@ -122,6 +124,7 @@ export function CreatePromptDialog({ open, onOpenChange, onPromptCreated }: Crea
               onChange={(e) => setContent(e.target.value)}
               rows={8}
               className="font-mono text-sm"
+              required
             />
             <p className="text-xs text-muted-foreground">
               Astuce : Utilisez {`{{nom}}`} pour créer des variables remplaçables.
