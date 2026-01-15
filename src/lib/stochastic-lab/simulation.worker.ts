@@ -2,6 +2,21 @@
 // STOCHASTIC LAB - WEB WORKER
 // Runs simulations off the main thread
 // ============================================
+//
+// ARCHITECTURE NOTE:
+// This file intentionally duplicates distribution samplers from
+// ./distributions.ts. Web Workers run in isolated JavaScript contexts
+// and cannot share module imports with the main thread.
+//
+// The duplication is a necessary trade-off:
+// - Keeps simulation execution off the main thread (no UI blocking)
+// - Enables progress reporting during long-running simulations
+// - Allows true parallel execution in browsers
+//
+// When updating distribution logic, remember to update BOTH:
+// 1. ./distributions.ts (main thread)
+// 2. This file (worker thread)
+// ============================================
 
 import type {
   SimulationConfig,

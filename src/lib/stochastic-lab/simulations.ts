@@ -10,8 +10,6 @@ import {
   MarkovChainConfig,
   RandomWalkConfig,
   Statistics,
-  HistogramData,
-  ConvergenceData,
   DistributionParams,
 } from './types';
 
@@ -22,6 +20,18 @@ import {
   binomialSample,
   uniformSample,
 } from './distributions';
+
+import {
+  welfordInit,
+  welfordUpdate,
+  welfordFinalize,
+  histogramInit,
+  histogramUpdate,
+  histogramFinalize,
+  convergenceInit,
+  convergenceUpdate,
+  convergenceFinalize,
+} from './welford';
 
 // ============================================
 // MAIN DISPATCHER
@@ -53,62 +63,102 @@ export function executeSimulation(config: SimulationConfig): SimulationResult {
 }
 
 // ============================================
-// MONTE CARLO SIMULATION
+// MONTE CARLO SIMULATION (Welford-optimized)
 // ============================================
 
 function runMonteCarlo(config: MonteCarloConfig): SimulationResult {
   const { iterations, distribution, estimator = 'mean' } = config;
 
-  // Generate samples based on distribution
-  const values: number[] = [];
   const sampler = getSampler(distribution);
+  const isPiEstimation = estimator === 'pi-geometric';
+  const multiplier = isPiEstimation ? 4 : 1;
 
+  // Initialize streaming statistics (Welford algorithm for numerical stability)
+  let welford = welfordInit();
+  const convergence = convergenceInit(iterations, 100, multiplier);
+
+  // Estimate expected range for histogram
+  let expectedMin = 0;
+  let expectedMax = 1;
+  if (!isPiEstimation) {
+    if (distribution.type === 'normal') {
+      expectedMin = distribution.params.mean - 4 * distribution.params.stdDev;
+      expectedMax = distribution.params.mean + 4 * distribution.params.stdDev;
+    } else if (distribution.type === 'exponential') {
+      expectedMin = 0;
+      expectedMax = 5 / distribution.params.lambda;
+    } else if (distribution.type === 'poisson') {
+      expectedMin = 0;
+      expectedMax = distribution.params.lambda + 4 * Math.sqrt(distribution.params.lambda);
+    } else if (distribution.type === 'binomial') {
+      expectedMin = 0;
+      expectedMax = distribution.params.n;
+    }
+  }
+  const histogram = histogramInit(expectedMin, expectedMax, 30);
+
+  // Store subset of values for visualization (max 10000)
+  const sampleRate = Math.max(1, Math.floor(iterations / 10000));
+  const sampledValues: number[] = [];
+
+  // Run simulation with streaming updates
   for (let i = 0; i < iterations; i++) {
-    if (estimator === 'pi-geometric') {
+    let value: number;
+
+    if (isPiEstimation) {
       // Special case: estimate π using geometric method
-      // Point in unit square, check if inside quarter circle
       const x = uniformSample();
       const y = uniformSample();
-      values.push(x * x + y * y <= 1 ? 1 : 0);
+      value = x * x + y * y <= 1 ? 1 : 0;
     } else {
-      values.push(sampler());
+      value = sampler();
+    }
+
+    // Update streaming statistics (O(1) memory, numerically stable)
+    welford = welfordUpdate(welford, value);
+    histogramUpdate(histogram, value);
+    convergenceUpdate(convergence, value);
+
+    // Sample for visualization
+    if (i % sampleRate === 0) {
+      sampledValues.push(value);
     }
   }
 
-  // Calculate statistics
-  const statistics = calculateStatistics(values);
+  // Finalize statistics
+  const stats = welfordFinalize(welford);
+  const histData = histogramFinalize(histogram);
+  const convData = convergenceFinalize(convergence);
 
-  // For π estimation, adjust the mean
-  if (estimator === 'pi-geometric') {
-    // π ≈ 4 * (points inside circle / total points)
-    statistics.mean = statistics.mean * 4;
-    // Adjust confidence interval
-    statistics.confidenceInterval95 = [
-      statistics.confidenceInterval95[0] * 4,
-      statistics.confidenceInterval95[1] * 4,
-    ];
-  }
+  // Adjust for π estimation
+  const finalMean = isPiEstimation ? stats.mean * 4 : stats.mean;
+  const standardError = stats.stdDev / Math.sqrt(stats.count);
+  const marginOfError = 1.96 * standardError * multiplier;
 
-  // Generate histogram
-  const histogram = createHistogram(values, 30);
-
-  // Generate convergence data (running mean)
-  const convergence = calculateConvergence(values, estimator === 'pi-geometric' ? 4 : 1);
+  const statistics: Statistics = {
+    mean: finalMean,
+    median: finalMean, // Approximation - exact median requires sorting all values
+    stdDev: stats.stdDev * (isPiEstimation ? 4 : 1),
+    variance: stats.variance * (isPiEstimation ? 16 : 1),
+    min: isPiEstimation ? 0 : stats.min,
+    max: isPiEstimation ? 4 : stats.max * (isPiEstimation ? 4 : 1),
+    confidenceInterval95: [finalMean - marginOfError, finalMean + marginOfError],
+  };
 
   return {
     type: 'monte-carlo',
     executedAt: '',
     executionTimeMs: 0,
     iterations,
-    values,
+    values: sampledValues,
     statistics,
-    histogram,
-    convergence,
+    histogram: histData,
+    convergence: convData,
   };
 }
 
 // ============================================
-// MARKOV CHAIN SIMULATION
+// MARKOV CHAIN SIMULATION (Welford-optimized)
 // ============================================
 
 function runMarkovChain(config: MarkovChainConfig): SimulationResult {
@@ -117,66 +167,89 @@ function runMarkovChain(config: MarkovChainConfig): SimulationResult {
   // Validate transition matrix
   validateTransitionMatrix(transitionMatrix, states.length);
 
-  // Run the chain
-  const stateIndices: number[] = [initialState];
-  const statePath: string[] = [states[initialState]];
-
-  let currentState = initialState;
-
-  for (let i = 1; i < steps; i++) {
-    // Sample next state based on transition probabilities
-    const rand = Math.random();
-    let cumulative = 0;
-    let nextState = currentState;
-
-    for (let j = 0; j < states.length; j++) {
-      cumulative += transitionMatrix[currentState][j];
-      if (rand < cumulative) {
-        nextState = j;
-        break;
-      }
-    }
-
-    stateIndices.push(nextState);
-    statePath.push(states[nextState]);
-    currentState = nextState;
-  }
-
-  // Calculate state frequencies
+  // Track state frequencies incrementally
   const stateFrequencies: Record<string, number> = {};
   for (const state of states) {
     stateFrequencies[state] = 0;
   }
-  for (const state of statePath) {
-    stateFrequencies[state]++;
+
+  // Store path (limited for large simulations)
+  const maxPathLength = Math.min(steps, 10000);
+  const sampleRate = Math.max(1, Math.floor(steps / maxPathLength));
+  const sampledPath: string[] = [];
+  const sampledIndices: number[] = [];
+
+  let currentState = initialState;
+  let welford = welfordInit();
+
+  // Convergence: track proportion in first state
+  const convergence = convergenceInit(steps, 100, 1);
+  let countInFirst = 0;
+
+  for (let i = 0; i < steps; i++) {
+    // Update state frequency
+    stateFrequencies[states[currentState]]++;
+
+    // Track for convergence
+    if (currentState === 0) countInFirst++;
+    convergenceUpdate(convergence, countInFirst / (i + 1));
+
+    // Update Welford stats on state index
+    welford = welfordUpdate(welford, currentState);
+
+    // Sample for visualization
+    if (i % sampleRate === 0) {
+      sampledPath.push(states[currentState]);
+      sampledIndices.push(currentState);
+    }
+
+    // Transition to next state
+    const rand = Math.random();
+    let cumulative = 0;
+    for (let j = 0; j < states.length; j++) {
+      cumulative += transitionMatrix[currentState][j];
+      if (rand < cumulative) {
+        currentState = j;
+        break;
+      }
+    }
   }
-  // Normalize to proportions
+
+  // Normalize frequencies
   for (const state of states) {
     stateFrequencies[state] /= steps;
   }
 
-  // Convert state indices to numbers for statistics
-  const values = stateIndices;
-  const statistics = calculateStatistics(values);
+  const stats = welfordFinalize(welford);
 
-  // Convergence: track proportion of time in each state
-  const convergence = calculateMarkovConvergence(statePath, states);
+  const statistics: Statistics = {
+    mean: stats.mean,
+    median: stats.mean,
+    stdDev: stats.stdDev,
+    variance: stats.variance,
+    min: stats.min,
+    max: stats.max,
+    confidenceInterval95: [
+      stats.mean - 1.96 * stats.stdDev / Math.sqrt(stats.count),
+      stats.mean + 1.96 * stats.stdDev / Math.sqrt(stats.count),
+    ],
+  };
 
   return {
     type: 'markov-chain',
     executedAt: '',
     executionTimeMs: 0,
     iterations: steps,
-    values,
+    values: sampledIndices,
     statistics,
-    statePath,
+    statePath: sampledPath,
     stateFrequencies,
-    convergence,
+    convergence: convergenceFinalize(convergence),
   };
 }
 
 // ============================================
-// RANDOM WALK SIMULATION
+// RANDOM WALK SIMULATION (Welford-optimized)
 // ============================================
 
 function runRandomWalk(config: RandomWalkConfig): SimulationResult {
@@ -196,22 +269,46 @@ function runRandomWalk1D(
   sampler: () => number,
   drift: number
 ): SimulationResult {
+  // Limit path storage
+  const maxPathLength = Math.min(steps, 10000);
+  const sampleRate = Math.max(1, Math.floor(steps / maxPathLength));
+
   const path: number[][] = [[0]];
-  const values: number[] = [0];
+  const sampledValues: number[] = [0];
 
   let position = 0;
+  let welford = welfordInit();
+  welford = welfordUpdate(welford, 0);
+
+  const convergence = convergenceInit(steps, 100, 1);
+  convergenceUpdate(convergence, 0);
 
   for (let i = 1; i < steps; i++) {
     const step = sampler() + drift;
     position += step;
-    values.push(position);
-    path.push([position]);
+
+    welford = welfordUpdate(welford, position);
+    convergenceUpdate(convergence, position);
+
+    if (i % sampleRate === 0) {
+      sampledValues.push(position);
+      path.push([position]);
+    }
   }
 
-  const statistics = calculateStatistics(values);
-  const convergence: ConvergenceData = {
-    iterations: values.map((_, i) => i),
-    values: values,
+  const stats = welfordFinalize(welford);
+
+  const statistics: Statistics = {
+    mean: stats.mean,
+    median: stats.mean,
+    stdDev: stats.stdDev,
+    variance: stats.variance,
+    min: stats.min,
+    max: stats.max,
+    confidenceInterval95: [
+      stats.mean - 1.96 * stats.stdDev / Math.sqrt(stats.count),
+      stats.mean + 1.96 * stats.stdDev / Math.sqrt(stats.count),
+    ],
   };
 
   return {
@@ -219,10 +316,10 @@ function runRandomWalk1D(
     executedAt: '',
     executionTimeMs: 0,
     iterations: steps,
-    values,
+    values: sampledValues,
     statistics,
     path,
-    convergence,
+    convergence: convergenceFinalize(convergence),
   };
 }
 
@@ -231,28 +328,50 @@ function runRandomWalk2D(
   sampler: () => number,
   drift: number
 ): SimulationResult {
+  const maxPathLength = Math.min(steps, 10000);
+  const sampleRate = Math.max(1, Math.floor(steps / maxPathLength));
+
   const path: number[][] = [[0, 0]];
-  const distances: number[] = [0];
+  const sampledDistances: number[] = [0];
 
   let x = 0;
   let y = 0;
+  let welford = welfordInit();
+  welford = welfordUpdate(welford, 0);
+
+  const convergence = convergenceInit(steps, 100, 1);
+  convergenceUpdate(convergence, 0);
 
   for (let i = 1; i < steps; i++) {
-    // Random direction
     const angle = Math.random() * 2 * Math.PI;
     const stepSize = Math.abs(sampler()) + drift;
 
     x += stepSize * Math.cos(angle);
     y += stepSize * Math.sin(angle);
 
-    path.push([x, y]);
-    distances.push(Math.sqrt(x * x + y * y));
+    const distance = Math.sqrt(x * x + y * y);
+    welford = welfordUpdate(welford, distance);
+    convergenceUpdate(convergence, distance);
+
+    if (i % sampleRate === 0) {
+      sampledDistances.push(distance);
+      path.push([x, y]);
+    }
   }
 
-  const statistics = calculateStatistics(distances);
-  const convergence: ConvergenceData = {
-    iterations: distances.map((_, i) => i),
-    values: distances,
+  const stats = welfordFinalize(welford);
+
+  const statistics: Statistics = {
+    mean: stats.mean,
+    median: stats.mean,
+    stdDev: stats.stdDev,
+    variance: stats.variance,
+    min: stats.min,
+    max: stats.max,
+    confidenceInterval95: [
+      stats.mean - 1.96 * stats.stdDev / Math.sqrt(stats.count),
+      stats.mean + 1.96 * stats.stdDev / Math.sqrt(stats.count),
+    ],
   };
 
   return {
@@ -260,153 +379,17 @@ function runRandomWalk2D(
     executedAt: '',
     executionTimeMs: 0,
     iterations: steps,
-    values: distances,
+    values: sampledDistances,
     statistics,
     path,
-    convergence,
+    convergence: convergenceFinalize(convergence),
   };
 }
 
 // ============================================
-// STATISTICAL UTILITIES
+// NOTE: Statistical utilities have been replaced by Welford algorithm
+// from ./welford.ts for numerical stability and O(1) memory usage.
 // ============================================
-
-function calculateStatistics(values: number[]): Statistics {
-  const n = values.length;
-  if (n === 0) {
-    return {
-      mean: 0,
-      median: 0,
-      stdDev: 0,
-      variance: 0,
-      min: 0,
-      max: 0,
-      confidenceInterval95: [0, 0],
-    };
-  }
-
-  // Mean
-  const sum = values.reduce((a, b) => a + b, 0);
-  const mean = sum / n;
-
-  // Variance and standard deviation
-  const squaredDiffs = values.map(x => (x - mean) ** 2);
-  const variance = squaredDiffs.reduce((a, b) => a + b, 0) / n;
-  const stdDev = Math.sqrt(variance);
-
-  // Median
-  const sorted = [...values].sort((a, b) => a - b);
-  const median = n % 2 === 0
-    ? (sorted[n / 2 - 1] + sorted[n / 2]) / 2
-    : sorted[Math.floor(n / 2)];
-
-  // Min and max
-  const min = sorted[0];
-  const max = sorted[n - 1];
-
-  // 95% confidence interval (assuming normal distribution)
-  // CI = mean ± 1.96 * (stdDev / sqrt(n))
-  const standardError = stdDev / Math.sqrt(n);
-  const marginOfError = 1.96 * standardError;
-  const confidenceInterval95: [number, number] = [
-    mean - marginOfError,
-    mean + marginOfError,
-  ];
-
-  return {
-    mean,
-    median,
-    stdDev,
-    variance,
-    min,
-    max,
-    confidenceInterval95,
-  };
-}
-
-function createHistogram(values: number[], binCount: number = 30): HistogramData {
-  if (values.length === 0) {
-    return { bins: [], counts: [] };
-  }
-
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-
-  // Handle case where all values are the same
-  if (min === max) {
-    return {
-      bins: [min.toFixed(2)],
-      counts: [values.length],
-    };
-  }
-
-  const binWidth = (max - min) / binCount;
-  const counts = new Array(binCount).fill(0);
-  const bins: string[] = [];
-
-  // Create bin labels
-  for (let i = 0; i < binCount; i++) {
-    const binStart = min + i * binWidth;
-    bins.push(binStart.toFixed(2));
-  }
-
-  // Count values in each bin
-  for (const value of values) {
-    let binIndex = Math.floor((value - min) / binWidth);
-    // Handle edge case where value === max
-    if (binIndex >= binCount) {
-      binIndex = binCount - 1;
-    }
-    counts[binIndex]++;
-  }
-
-  return { bins, counts };
-}
-
-function calculateConvergence(
-  values: number[],
-  multiplier: number = 1
-): ConvergenceData {
-  const iterations: number[] = [];
-  const runningMeans: number[] = [];
-
-  let sum = 0;
-  const step = Math.max(1, Math.floor(values.length / 100)); // Max 100 points
-
-  for (let i = 0; i < values.length; i++) {
-    sum += values[i];
-    if (i % step === 0 || i === values.length - 1) {
-      iterations.push(i + 1);
-      runningMeans.push((sum / (i + 1)) * multiplier);
-    }
-  }
-
-  return { iterations, values: runningMeans };
-}
-
-function calculateMarkovConvergence(
-  statePath: string[],
-  states: string[]
-): ConvergenceData {
-  // Track proportion in first state over time
-  const iterations: number[] = [];
-  const proportions: number[] = [];
-
-  let countInFirst = 0;
-  const step = Math.max(1, Math.floor(statePath.length / 100));
-
-  for (let i = 0; i < statePath.length; i++) {
-    if (statePath[i] === states[0]) {
-      countInFirst++;
-    }
-    if (i % step === 0 || i === statePath.length - 1) {
-      iterations.push(i + 1);
-      proportions.push(countInFirst / (i + 1));
-    }
-  }
-
-  return { iterations, values: proportions };
-}
 
 // ============================================
 // HELPER FUNCTIONS

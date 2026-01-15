@@ -18,6 +18,7 @@ import type {
 export * from './types';
 export * from './distributions';
 export * from './simulations';
+export * from './welford';
 
 const MODULE_ID = 'stochastic-lab';
 const DATA_TYPE = 'conversation';
