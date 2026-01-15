@@ -16,7 +16,7 @@ import type { SimulationConfig, ChatMessage, AgentPlanResponse } from '@/lib/sto
 const SimulationAttachmentSchema = z.object({
   config: z.object({
     type: z.enum(['monte-carlo', 'markov-chain', 'random-walk']),
-    config: z.record(z.unknown()),
+    config: z.record(z.string(), z.unknown()),
   }),
   result: z.unknown().optional(),
   status: z.enum(['pending', 'running', 'completed', 'error']),
@@ -186,7 +186,7 @@ export async function planSimulation(
   });
 
   if (!validation.success) {
-    const errors = validation.error.errors.map(e => e.message).join(', ');
+    const errors = validation.error.issues.map(e => e.message).join(', ');
     console.error('Input validation failed:', errors);
     return {
       explanation: 'Entrée invalide. Veuillez vérifier votre message.',
