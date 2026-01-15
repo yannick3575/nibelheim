@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { extractUrlContent } from '@/lib/scraper';
 import { getYouTubeTranscript } from '@/lib/youtube';
+import { withUserRateLimit } from '@/lib/rate-limit';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { ItemFilters, Item, UserProfile } from '@/types/ai-inbox';
 
@@ -48,6 +49,10 @@ export async function GET(request: NextRequest) {
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    // Rate limiting (readonly operations have looser limits)
+    const rateLimitResponse = await withUserRateLimit(user.id, 'readonly');
+    if (rateLimitResponse) return rateLimitResponse;
 
     // Parse query parameters
     const searchParams = request.nextUrl.searchParams;
@@ -122,6 +127,10 @@ export async function POST(request: NextRequest) {
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    // Rate limiting (AI operations have dedicated limits)
+    const rateLimitResponse = await withUserRateLimit(user.id, 'ai');
+    if (rateLimitResponse) return rateLimitResponse;
 
     const body = await request.json();
 

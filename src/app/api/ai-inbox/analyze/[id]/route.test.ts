@@ -23,9 +23,23 @@ vi.mock('@/lib/logger', () => ({
   },
 }));
 
+// Mock rate limiting (always allow in tests)
+vi.mock('@/lib/rate-limit', () => ({
+  withUserRateLimit: vi.fn().mockResolvedValue(null),
+}));
+
 // Mock supabase server
 vi.mock('@/lib/supabase/server', () => ({
   createClient: vi.fn(),
+}));
+
+// Mock scraper and youtube (may be called for content extraction)
+vi.mock('@/lib/scraper', () => ({
+  extractUrlContent: vi.fn().mockResolvedValue(null),
+}));
+
+vi.mock('@/lib/youtube', () => ({
+  getYouTubeTranscript: vi.fn().mockResolvedValue(null),
 }));
 
 import { getItem, getSettings, updateItem } from '@/lib/ai-inbox';
@@ -129,7 +143,7 @@ describe('/api/ai-inbox/analyze/[id]', () => {
       const data = await response.json();
 
       expect(response.status).toBe(500);
-      expect(data.error).toBe('Internal server error');
+      expect(data.error).toBe('Erreur interne du serveur');
     });
   });
 });

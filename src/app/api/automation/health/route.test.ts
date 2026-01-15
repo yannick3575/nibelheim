@@ -38,7 +38,16 @@ vi.mock('@/lib/supabase/server', () => {
   };
 });
 
+// Mock rate limiting (always allow in tests)
+vi.mock('@/lib/rate-limit', () => ({
+  withRateLimit: vi.fn().mockResolvedValue(null),
+}));
+
+import { NextRequest } from 'next/server';
+
 describe('GET /api/automation/health', () => {
+  const createRequest = () => new NextRequest('http://localhost:3000/api/automation/health');
+
   beforeEach(() => {
     vi.clearAllMocks();
     process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://example.supabase.co';
@@ -48,7 +57,7 @@ describe('GET /api/automation/health', () => {
   it('should return 401 if unauthorized', async () => {
     mockGetUser.mockResolvedValue({ data: { user: null } });
 
-    const response = await GET();
+    const response = await GET(createRequest());
     const data = await response.json();
 
     expect(response.status).toBe(401);
@@ -58,7 +67,7 @@ describe('GET /api/automation/health', () => {
   it('should return health status if authorized', async () => {
     mockGetUser.mockResolvedValue({ data: { user: { id: 'test-user' } } });
 
-    const response = await GET();
+    const response = await GET(createRequest());
     const data = await response.json();
 
     expect(response.status).toBe(200);

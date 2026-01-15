@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { validateApiToken, hasScope, logAutomationAction } from '@/lib/api-auth';
 import { updateSourceForUser, deleteSourceForUser } from '@/lib/tech-watch-automation';
 import { logger } from '@/lib/logger';
+import { withRateLimit } from '@/lib/rate-limit';
 
 interface RouteParams {
     params: Promise<{
@@ -46,6 +47,10 @@ const updateSourceSchema = z.object({
  */
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
     try {
+        // Rate limiting
+        const rateLimitResponse = await withRateLimit(request, 'automation');
+        if (rateLimitResponse) return rateLimitResponse;
+
         const { id } = await params;
 
         // Validate API token
@@ -124,6 +129,10 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
  */
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
     try {
+        // Rate limiting
+        const rateLimitResponse = await withRateLimit(request, 'automation');
+        if (rateLimitResponse) return rateLimitResponse;
+
         const { id } = await params;
 
         // Validate API token

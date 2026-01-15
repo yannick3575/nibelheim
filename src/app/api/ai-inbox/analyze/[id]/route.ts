@@ -5,6 +5,7 @@ import { logger } from '@/lib/logger';
 import { createClient } from '@/lib/supabase/server';
 import { extractUrlContent } from '@/lib/scraper';
 import { getYouTubeTranscript } from '@/lib/youtube';
+import { withUserRateLimit } from '@/lib/rate-limit';
 
 interface RouteParams {
   params: Promise<{
@@ -29,6 +30,10 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    // Rate limiting (AI operations have dedicated limits)
+    const rateLimitResponse = await withUserRateLimit(user.id, 'ai');
+    if (rateLimitResponse) return rateLimitResponse;
 
     const { id } = await params;
 

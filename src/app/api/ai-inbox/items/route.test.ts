@@ -43,6 +43,11 @@ vi.mock('@/lib/youtube', () => ({
   getYouTubeTranscript: vi.fn(),
 }));
 
+// Mock rate limiting (always allow in tests)
+vi.mock('@/lib/rate-limit', () => ({
+  withUserRateLimit: vi.fn().mockResolvedValue(null),
+}));
+
 import { getItems, createItem, getSettings } from '@/lib/ai-inbox';
 import { analyzeItem } from '@/lib/ai-inbox-gemini';
 import { extractUrlContent } from '@/lib/scraper';

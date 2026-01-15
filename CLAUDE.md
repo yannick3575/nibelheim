@@ -289,9 +289,20 @@ The app uses a Vision UI-inspired design with neon glassmorphism effects:
 ### Security Considerations
 - **RLS policies**: All tables have Row Level Security enabled
 - **Authentication**: Middleware protects all dashboard routes
-- **API tokens**: Stored encrypted in database
+- **API tokens**: Stored as SHA-256 hashes (never plaintext)
 - **Input validation**: All API endpoints use Zod schemas
+- **Rate limiting**: Upstash Redis-based sliding window rate limiting on all API endpoints
 - **Content Security**: Be cautious with user-generated content (XSS risks)
+
+### Rate Limiting Configuration
+Rate limiting is implemented via Upstash Redis (`src/lib/rate-limit.ts`):
+- **default**: 100 req/min (standard authenticated routes)
+- **automation**: 30 req/min (external API access via tokens)
+- **sensitive**: 10 req/min (token management, auth operations)
+- **ai**: 20 req/min (Gemini API calls)
+- **readonly**: 200 req/min (GET operations)
+
+If Redis is not configured, rate limiting fails open (allows requests).
 
 ### Database Migrations
 - Location: `supabase/migrations/`
@@ -322,6 +333,7 @@ The app uses a Vision UI-inspired design with neon glassmorphism effects:
 - **Styling**: Tailwind CSS v4, custom Vision UI utilities
 - **Database**: Supabase (PostgreSQL + Auth + Realtime + Storage)
 - **AI**: Google Generative AI SDK (`@google/generative-ai`)
+- **Rate Limiting**: Upstash Redis (`@upstash/ratelimit`, `@upstash/redis`)
 - **Forms**: Native HTML5 validation with Zod schemas on backend
 - **Math**: KaTeX for LaTeX rendering in markdown
 - **Charts**: Recharts for data visualization

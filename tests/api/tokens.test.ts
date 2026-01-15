@@ -27,6 +27,11 @@ vi.mock('@/lib/logger', () => ({
     },
 }));
 
+// Mock rate limiting (always allow in tests)
+vi.mock('@/lib/rate-limit', () => ({
+    withUserRateLimit: vi.fn().mockResolvedValue(null),
+}));
+
 describe('/api/tokens', () => {
     beforeEach(() => {
         vi.clearAllMocks();

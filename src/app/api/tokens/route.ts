@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { createApiToken, listApiTokens } from '@/lib/api-auth';
 import { logger } from '@/lib/logger';
 import { createClient } from '@/lib/supabase/server';
+import { withUserRateLimit } from '@/lib/rate-limit';
 
 const createTokenSchema = z.object({
     name: z.string().min(1).max(100),
@@ -26,6 +27,10 @@ export async function GET() {
                 { status: 401 }
             );
         }
+
+        // Rate limiting (sensitive operations have stricter limits)
+        const rateLimitResponse = await withUserRateLimit(user.id, 'sensitive');
+        if (rateLimitResponse) return rateLimitResponse;
 
         const tokens = await listApiTokens();
         return NextResponse.json({ tokens });
@@ -61,6 +66,10 @@ export async function POST(request: NextRequest) {
                 { status: 401 }
             );
         }
+
+        // Rate limiting (sensitive operations have stricter limits)
+        const rateLimitResponse = await withUserRateLimit(user.id, 'sensitive');
+        if (rateLimitResponse) return rateLimitResponse;
 
         const body = await request.json();
         const validation = createTokenSchema.safeParse(body);

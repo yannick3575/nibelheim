@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { revokeApiToken } from '@/lib/api-auth';
 import { logger } from '@/lib/logger';
 import { createClient } from '@/lib/supabase/server';
+import { withUserRateLimit } from '@/lib/rate-limit';
 
 interface RouteParams {
     params: Promise<{
@@ -23,6 +24,10 @@ export async function DELETE(_request: NextRequest, { params }: RouteParams) {
         if (!user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
+
+        // Rate limiting (sensitive operations have stricter limits)
+        const rateLimitResponse = await withUserRateLimit(user.id, 'sensitive');
+        if (rateLimitResponse) return rateLimitResponse;
 
         const { id } = await params;
 

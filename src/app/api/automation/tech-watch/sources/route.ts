@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { validateApiToken, hasScope, logAutomationAction } from '@/lib/api-auth';
 import { createSourceForUser, getSourcesForUser } from '@/lib/tech-watch-automation';
 import { logger } from '@/lib/logger';
+import { withRateLimit } from '@/lib/rate-limit';
 
 // ============================================
 // VALIDATION SCHEMAS
@@ -30,6 +31,10 @@ const createSourceSchema = z.object({
  */
 export async function GET(request: NextRequest) {
     try {
+        // Rate limiting
+        const rateLimitResponse = await withRateLimit(request, 'automation');
+        if (rateLimitResponse) return rateLimitResponse;
+
         // Validate API token
         const auth = await validateApiToken(request);
         if (!auth || !hasScope(auth, 'tech-watch:read')) {
@@ -81,6 +86,10 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
     try {
+        // Rate limiting
+        const rateLimitResponse = await withRateLimit(request, 'automation');
+        if (rateLimitResponse) return rateLimitResponse;
+
         // Validate API token
         const auth = await validateApiToken(request);
         if (!auth || !hasScope(auth, 'tech-watch:write')) {

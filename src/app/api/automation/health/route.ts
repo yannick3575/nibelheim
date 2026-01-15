@@ -1,6 +1,7 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/server';
+import { withRateLimit } from '@/lib/rate-limit';
 
 /**
  * GET /api/automation/health
@@ -8,7 +9,11 @@ import { createClient } from '@/lib/supabase/server';
  *
  * This endpoint requires authentication.
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
+    // Rate limiting
+    const rateLimitResponse = await withRateLimit(request, 'automation');
+    if (rateLimitResponse) return rateLimitResponse;
+
     // 1. Authentication Check
     const supabaseAuth = await createClient();
     const {
