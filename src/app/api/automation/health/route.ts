@@ -172,11 +172,12 @@ export async function GET() {
             process.env.SUPABASE_SERVICE_ROLE_KEY!
         );
 
-        // Try to query with a fake token to see if the query works
+        // Try to query with a fake token hash to see if the query works
+        // Note: token_hash column stores SHA-256 hashes, not plaintext tokens
         const { error: queryError } = await supabase
             .from('api_tokens')
             .select('id, user_id, scopes, expires_at')
-            .eq('token', 'fake-test-token-for-diagnostics')
+            .eq('token_hash', 'fake-test-hash-for-diagnostics')
             .single();
 
         // We expect this to fail with "no rows" error, which is good
