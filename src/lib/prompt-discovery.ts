@@ -10,6 +10,7 @@ import { logger } from './logger';
 // ============================================
 
 const GEMINI_MODEL = 'gemini-3-flash-preview';
+const GEMINI_TIMEOUT_MS = 60000; // 60 seconds for prompt extraction (larger content)
 
 // ============================================
 // AI PROMPT
@@ -252,7 +253,13 @@ ${content.substring(0, 30000)}
 Extract the prompts in JSON format.
 `;
 
-    const result = await model.generateContent(prompt);
+    // Add timeout with Promise.race pattern
+    const generatePromise = model.generateContent(prompt);
+    const timeoutPromise = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('Gemini API timeout')), GEMINI_TIMEOUT_MS)
+    );
+
+    const result = await Promise.race([generatePromise, timeoutPromise]);
     const response = result.response;
     const text = response.text();
     logger.info('[prompt-discovery] Gemini response received, length:', text.length);

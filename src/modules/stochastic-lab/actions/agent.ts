@@ -6,7 +6,41 @@
 // ============================================
 
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { z } from 'zod';
 import type { SimulationConfig, ChatMessage, AgentPlanResponse } from '@/lib/stochastic-lab/types';
+
+// ============================================
+// INPUT VALIDATION SCHEMAS
+// ============================================
+
+const SimulationAttachmentSchema = z.object({
+  config: z.object({
+    type: z.enum(['monte-carlo', 'markov-chain', 'random-walk']),
+    config: z.record(z.unknown()),
+  }),
+  result: z.unknown().optional(),
+  status: z.enum(['pending', 'running', 'completed', 'error']),
+  error: z.string().optional(),
+}).optional();
+
+const ChatMessageSchema = z.object({
+  id: z.string().min(1),
+  role: z.enum(['user', 'assistant', 'system']),
+  content: z.string().max(50000), // Reasonable limit for message content
+  timestamp: z.string(),
+  simulation: SimulationAttachmentSchema,
+});
+
+const PlanSimulationInputSchema = z.object({
+  userMessage: z.string()
+    .min(1, 'Message cannot be empty')
+    .max(10000, 'Message too long (max 10000 characters)'),
+  conversationHistory: z.array(ChatMessageSchema)
+    .max(100, 'Too many messages in history (max 100)'),
+});
+
+// Gemini API timeout (30 seconds)
+const GEMINI_TIMEOUT_MS = 30000;
 
 const SYSTEM_PROMPT = `Tu es un expert en simulations probabilistes et processus stochastiques. Tu aides l'utilisateur à concevoir et comprendre des simulations.
 
@@ -145,6 +179,21 @@ export async function planSimulation(
   userMessage: string,
   conversationHistory: ChatMessage[]
 ): Promise<AgentPlanResponse> {
+  // Validate inputs with Zod
+  const validation = PlanSimulationInputSchema.safeParse({
+    userMessage,
+    conversationHistory,
+  });
+
+  if (!validation.success) {
+    const errors = validation.error.errors.map(e => e.message).join(', ');
+    console.error('Input validation failed:', errors);
+    return {
+      explanation: 'Entrée invalide. Veuillez vérifier votre message.',
+      reasoning: `Validation error: ${errors}`,
+    };
+  }
+
   try {
     const genAI = getGeminiClient();
     const model = genAI.getGenerativeModel({
@@ -154,29 +203,51 @@ export async function planSimulation(
 
     const prompt = buildPrompt(userMessage, conversationHistory);
 
-    const result = await model.generateContent({
-      contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      generationConfig: {
-        temperature: 0.7,
-        maxOutputTokens: 2048,
-      },
-    });
+    // Create AbortController for timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), GEMINI_TIMEOUT_MS);
 
-    const response = result.response;
-    const text = response.text();
+    try {
+      const result = await model.generateContent(
+        {
+          contents: [{ role: 'user', parts: [{ text: prompt }] }],
+          generationConfig: {
+            temperature: 0.7,
+            maxOutputTokens: 2048,
+          },
+        },
+        { signal: controller.signal }
+      );
 
-    // Extract simulation config if present
-    const simulation = extractSimulationConfig(text);
+      clearTimeout(timeoutId);
 
-    // Clean the response content (remove JSON block)
-    const explanation = cleanResponseContent(text);
+      const response = result.response;
+      const text = response.text();
 
-    return {
-      explanation,
-      simulation,
-    };
+      // Extract simulation config if present
+      const simulation = extractSimulationConfig(text);
+
+      // Clean the response content (remove JSON block)
+      const explanation = cleanResponseContent(text);
+
+      return {
+        explanation,
+        simulation,
+      };
+    } catch (error) {
+      clearTimeout(timeoutId);
+      throw error;
+    }
   } catch (error) {
     console.error('Gemini API error:', error);
+
+    // Check for timeout error
+    if (error instanceof Error && error.name === 'AbortError') {
+      return {
+        explanation: 'La requête a pris trop de temps. Veuillez réessayer avec une question plus simple.',
+        reasoning: 'Request timed out after 30 seconds',
+      };
+    }
 
     // Return a fallback response
     return {
