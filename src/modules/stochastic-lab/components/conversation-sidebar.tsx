@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, memo } from 'react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
@@ -27,7 +27,7 @@ interface ConversationSidebarProps {
   isCreating: boolean;
 }
 
-export function ConversationSidebar({
+export const ConversationSidebar = memo(function ConversationSidebar({
   conversations,
   selectedId,
   onSelect,
@@ -117,4 +117,4 @@ export function ConversationSidebar({
       </AlertDialog>
     </>
   );
-}
+});
