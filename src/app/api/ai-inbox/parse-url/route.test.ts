@@ -20,6 +20,17 @@ import { createClient } from '@/lib/supabase/server';
 // Mock fetch global
 global.fetch = vi.fn();
 
+// Helper to create a stream from string
+function createStream(content: string) {
+  const encoder = new TextEncoder();
+  return new ReadableStream({
+    start(controller) {
+      controller.enqueue(encoder.encode(content));
+      controller.close();
+    },
+  });
+}
+
 describe('/api/ai-inbox/parse-url', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -50,9 +61,6 @@ describe('/api/ai-inbox/parse-url', () => {
     expect(data.error).toBe('URL is required');
   });
 
-  // This test confirms the current vulnerability: it works WITHOUT authentication check in the code
-  // BUT we will soon add authentication, so this test is expected to fail or need updating after fix.
-  // For now, let's test how it SHOULD behave after our fix (expect 401).
   it('should return 401 when not authenticated', async () => {
     vi.mocked(createClient).mockResolvedValue({
       auth: {
@@ -62,26 +70,10 @@ describe('/api/ai-inbox/parse-url', () => {
 
     const response = await GET(createGetRequest('https://example.com'));
 
-    // Currently, this will fail because the endpoint is PUBLIC (returns 200 or 500 depending on fetch).
-    // After our fix, it should return 401.
-    // For reproduction purposes, let's verify what happens NOW.
-    // Since we haven't fixed it yet, we expect this check to FAIL if we assert 401.
-    // So to demonstrate the vulnerability, we can check if it proceeds to call fetch even without user.
-
-    // However, to keep the test suite clean for the final PR, I will write the test assuming the fix is applied.
-    // But since I need to verify the fix, I will run this test AFTER the fix.
-
-    // Let's assert 401 here. It will fail now, which is good.
-    if (response.status !== 401) {
-       console.log("VULNERABILITY CONFIRMED: Endpoint is accessible without authentication!");
-    }
-
-    // We expect 401
     expect(response.status).toBe(401);
   });
 
   it('should return 400 for localhost (SSRF protection)', async () => {
-    // This tests the SSRF protection we are about to add
     const response = await GET(createGetRequest('http://localhost:3000/secret'));
     const data = await response.json();
 
@@ -100,7 +92,12 @@ describe('/api/ai-inbox/parse-url', () => {
   it('should extract title from valid external URL', async () => {
     vi.mocked(fetch).mockResolvedValue({
       ok: true,
-      text: () => Promise.resolve('<html><head><title>Test Page</title></head><body></body></html>'),
+      status: 200,
+      headers: new Headers({
+        'content-type': 'text/html; charset=utf-8',
+        'content-length': '100',
+      }),
+      body: createStream('<html><head><title>Test Page</title></head><body></body></html>'),
     } as Response);
 
     const response = await GET(createGetRequest('https://example.com'));
@@ -108,5 +105,108 @@ describe('/api/ai-inbox/parse-url', () => {
 
     expect(response.status).toBe(200);
     expect(data.title).toBe('Test Page');
+  });
+
+  // Security Enhancements Tests
+
+  it('should block redirects to unsafe URLs (SSRF protection)', async () => {
+    // Mock first request returning a redirect to localhost
+    vi.mocked(fetch).mockResolvedValueOnce({
+      ok: false,
+      status: 302,
+      headers: new Headers({
+        'location': 'http://localhost:8080/admin',
+      }),
+      body: createStream('Redirecting...'),
+    } as Response);
+
+    const response = await GET(createGetRequest('https://example.com/redirect'));
+    const data = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(data.error).toContain('Invalid URL');
+    // Ensure fetch was called with redirect: 'manual'
+    expect(fetch).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({
+      redirect: 'manual'
+    }));
+  });
+
+  it('should follow safe redirects', async () => {
+    // Mock first request redirecting to another safe URL
+    vi.mocked(fetch).mockResolvedValueOnce({
+      ok: false,
+      status: 301,
+      headers: new Headers({
+        'location': 'https://example.com/final',
+      }),
+      body: createStream('Redirecting...'),
+    } as Response);
+
+    // Mock second request returning content
+    vi.mocked(fetch).mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      headers: new Headers({
+        'content-type': 'text/html',
+      }),
+      body: createStream('<title>Final Page</title>'),
+    } as Response);
+
+    const response = await GET(createGetRequest('https://example.com/start'));
+    const data = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(data.title).toBe('Final Page');
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
+
+  it('should reject non-text content types (DoS protection)', async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      headers: new Headers({
+        'content-type': 'application/pdf',
+      }),
+      body: createStream('%PDF-1.4...'),
+    } as Response);
+
+    const response = await GET(createGetRequest('https://example.com/file.pdf'));
+    const data = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(data.error).toContain('Invalid content type');
+  });
+
+  it('should reject large content length (DoS protection)', async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      headers: new Headers({
+        'content-type': 'text/html',
+        'content-length': '5000000', // 5MB
+      }),
+      body: createStream('...'),
+    } as Response);
+
+    const response = await GET(createGetRequest('https://example.com/huge'));
+    const data = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(data.error).toContain('Response too large');
+  });
+
+  it('should handle timeout (DoS protection)', async () => {
+     // We can't easily mock the timeout triggering in the fetch mock itself without using real timers
+     // but we can check if the AbortSignal was passed.
+
+     vi.mocked(fetch).mockResolvedValue({
+         ok: true,
+         headers: new Headers({'content-type': 'text/html'}),
+         body: createStream('<title>Ok</title>')
+     } as Response);
+
+     await GET(createGetRequest('https://example.com'));
+
+     expect(fetch).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({
+         signal: expect.any(AbortSignal)
+     }));
   });
 });
