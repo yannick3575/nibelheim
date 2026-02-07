@@ -1,6 +1,6 @@
 'use client';
 
-import { memo } from 'react';
+import { memo, useEffect, useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -46,13 +46,36 @@ export const FilterBar = memo(function FilterBar({
   onStatusChange,
   draftCount = 0,
 }: FilterBarProps) {
-  const hasActiveFilters = selectedCategory !== 'all' || showFavoritesOnly || searchQuery.length > 0 || selectedStatus !== 'published';
+  // Local state for immediate input response
+  const [localSearch, setLocalSearch] = useState(searchQuery);
+
+  // Sync local state when parent searchQuery changes (e.g., reset filters)
+  useEffect(() => {
+    setLocalSearch(searchQuery);
+  }, [searchQuery]);
+
+  // Debounce logic
+  useEffect(() => {
+    if (localSearch === searchQuery) return;
+
+    const timer = setTimeout(() => {
+      onSearchChange(localSearch);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [localSearch, onSearchChange, searchQuery]);
+
+  const hasActiveFilters = selectedCategory !== 'all' || showFavoritesOnly || localSearch.length > 0 || selectedStatus !== 'published';
 
   const clearFilters = () => {
     onCategoryChange('all');
     onShowFavoritesChange(false);
-    onSearchChange('');
+    onSearchChange(''); // This will update parent, which updates prop, which updates local state via useEffect
     onStatusChange?.('published');
+  };
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setLocalSearch(e.target.value);
   };
 
   return (
@@ -106,8 +129,8 @@ export const FilterBar = memo(function FilterBar({
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Rechercher dans les prompts..."
-            value={searchQuery}
-            onChange={(e) => onSearchChange(e.target.value)}
+            value={localSearch}
+            onChange={handleSearchChange}
             className="pl-9"
             aria-label="Recherche"
           />
