@@ -131,10 +131,16 @@ export default function PromptLibraryModule() {
   }, []);
 
   const stats = useMemo(() => {
+    let favorites = 0;
+    const categories = new Set();
+    for (const p of prompts) {
+      if (p.is_favorite) favorites++;
+      categories.add(p.category);
+    }
     return {
       total: prompts.length,
-      favorites: prompts.filter((p) => p.is_favorite).length,
-      categories: new Set(prompts.map((p) => p.category)).size
+      favorites,
+      categories: categories.size
     };
   }, [prompts]);
 
