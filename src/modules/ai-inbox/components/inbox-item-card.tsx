@@ -22,6 +22,11 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { Badge } from '@/components/ui/badge';
 import { MarkdownRenderer } from '@/components/markdown-renderer';
 import {
@@ -204,47 +209,68 @@ export const InboxItemCard = memo(function InboxItemCard({
             </CardDescription>
           </div>
           <div className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleToggleFavorite}
-              disabled={isFavoritePending}
-              className={cn(
-                'flex-shrink-0 h-7 w-7 sm:h-8 sm:w-8 p-0',
-                optimisticFavorite && 'text-yellow-500',
-                isFavoritePending && 'opacity-70'
-              )}
-              title={
-                optimisticFavorite
-                  ? 'Retirer des favoris'
-                  : 'Ajouter aux favoris'
-              }
-            >
-              <Star
-                className={cn(
-                  'h-3.5 w-3.5 sm:h-4 sm:w-4',
-                  optimisticFavorite && 'fill-yellow-500'
-                )}
-              />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleToggleRead}
-              disabled={isReadPending}
-              className={cn(
-                'flex-shrink-0 h-7 w-7 sm:h-8 sm:w-8 p-0',
-                isRead && 'text-green-500 hover:text-green-400',
-                isReadPending && 'opacity-70'
-              )}
-              title={isRead ? 'Marquer comme non lu' : 'Marquer comme lu'}
-            >
-              {isRead ? (
-                <Check className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              ) : (
-                <Circle className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              )}
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleToggleFavorite}
+                  disabled={isFavoritePending}
+                  className={cn(
+                    'flex-shrink-0 h-7 w-7 sm:h-8 sm:w-8 p-0',
+                    optimisticFavorite && 'text-yellow-500',
+                    isFavoritePending && 'opacity-70'
+                  )}
+                  aria-label={
+                    optimisticFavorite
+                      ? 'Retirer des favoris'
+                      : 'Ajouter aux favoris'
+                  }
+                >
+                  <Star
+                    className={cn(
+                      'h-3.5 w-3.5 sm:h-4 sm:w-4',
+                      optimisticFavorite && 'fill-yellow-500'
+                    )}
+                  />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>
+                  {optimisticFavorite
+                    ? 'Retirer des favoris'
+                    : 'Ajouter aux favoris'}
+                </p>
+              </TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleToggleRead}
+                  disabled={isReadPending}
+                  className={cn(
+                    'flex-shrink-0 h-7 w-7 sm:h-8 sm:w-8 p-0',
+                    isRead && 'text-green-500 hover:text-green-400',
+                    isReadPending && 'opacity-70'
+                  )}
+                  aria-label={
+                    isRead ? 'Marquer comme non lu' : 'Marquer comme lu'
+                  }
+                >
+                  {isRead ? (
+                    <Check className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                  ) : (
+                    <Circle className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                  )}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{isRead ? 'Marquer comme non lu' : 'Marquer comme lu'}</p>
+              </TooltipContent>
+            </Tooltip>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -296,21 +322,27 @@ export const InboxItemCard = memo(function InboxItemCard({
                 <Sparkles className="h-4 w-4" />
                 Analyse IA
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleAnalyze}
-                disabled={isAnalyzing}
-                className="h-7 px-2 text-xs text-muted-foreground hover:text-aurora-cyan"
-                title="Re-analyser avec IA"
-              >
-                {isAnalyzing ? (
-                  <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                ) : (
-                  <RefreshCw className="h-3 w-3 mr-1" />
-                )}
-                Re-analyser
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleAnalyze}
+                    disabled={isAnalyzing}
+                    className="h-7 px-2 text-xs text-muted-foreground hover:text-aurora-cyan"
+                  >
+                    {isAnalyzing ? (
+                      <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                    ) : (
+                      <RefreshCw className="h-3 w-3 mr-1" />
+                    )}
+                    Re-analyser
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Re-analyser avec IA</p>
+                </TooltipContent>
+              </Tooltip>
             </div>
             <div className="text-sm">
               <MarkdownRenderer content={item.ai_analysis.summary} />
