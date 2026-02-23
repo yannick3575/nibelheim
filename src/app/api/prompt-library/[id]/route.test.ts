@@ -17,6 +17,11 @@ vi.mock('@/lib/logger', () => ({
   },
 }));
 
+// Mock rate limiting
+vi.mock('@/lib/rate-limit', () => ({
+  withUserRateLimit: vi.fn().mockResolvedValue(null),
+}));
+
 // Mock Supabase
 const mockGetUser = vi.fn();
 vi.mock('@/lib/supabase/server', () => ({

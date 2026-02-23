@@ -35,11 +35,17 @@ export async function getYouTubeTranscript(url: string): Promise<string | null> 
 
         // We try to fetch the transcript with a timeout
         const transcriptPromise = YoutubeTranscript.fetchTranscript(videoId);
-        const timeoutPromise = new Promise<never>((_, reject) =>
-            setTimeout(() => reject(new Error('YouTube transcript fetch timeout')), FETCH_TIMEOUT)
-        );
+        let timeoutId: ReturnType<typeof setTimeout>;
+        const timeoutPromise = new Promise<never>((_, reject) => {
+            timeoutId = setTimeout(() => reject(new Error('YouTube transcript fetch timeout')), FETCH_TIMEOUT);
+        });
 
-        const transcriptConfig = await Promise.race([transcriptPromise, timeoutPromise]);
+        let transcriptConfig;
+        try {
+            transcriptConfig = await Promise.race([transcriptPromise, timeoutPromise]);
+        } finally {
+            clearTimeout(timeoutId!);
+        }
 
         if (!transcriptConfig || transcriptConfig.length === 0) {
             logger.warn(`[youtube] No transcript found for video: ${videoId}`);

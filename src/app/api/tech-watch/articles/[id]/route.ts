@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { getArticle, toggleArticleRead, toggleArticleFavorite } from '@/lib/tech-watch';
 import { logger } from '@/lib/logger';
 import { createClient } from '@/lib/supabase/server';
+import { withUserRateLimit } from '@/lib/rate-limit';
 
 interface RouteParams {
     params: Promise<{
@@ -59,8 +60,18 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
+        // Rate limiting
+        const rateLimitResponse = await withUserRateLimit(user.id, 'default');
+        if (rateLimitResponse) return rateLimitResponse;
+
         const { id } = await params;
-        const body = await request.json();
+
+        let body;
+        try {
+            body = await request.json();
+        } catch {
+            return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+        }
 
         const validation = updateArticleSchema.safeParse(body);
 

@@ -7,6 +7,9 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { logger } from '@/lib/logger';
+
+/** PostgREST error code for "no rows found" from `.single()` queries */
+const PGRST_NO_ROWS = 'PGRST116';
 import type {
   Item,
   ItemRow,
@@ -248,7 +251,7 @@ export async function getSettings(): Promise<Settings | null> {
   }
 
   // If error is not "no rows found", log it
-  if (fetchError && fetchError.code !== 'PGRST116') {
+  if (fetchError && fetchError.code !== PGRST_NO_ROWS) {
     logger.error('[ai-inbox] getSettings fetch failed:', fetchError);
     return null;
   }

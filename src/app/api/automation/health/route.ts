@@ -187,7 +187,7 @@ export async function GET(request: NextRequest) {
 
         // We expect this to fail with "no rows" error, which is good
         // Any other error indicates a problem
-        const isExpectedError = queryError?.code === 'PGRST116'; // No rows found
+        const isExpectedError = queryError?.code === 'PGRST116'; // PostgREST: no rows found
 
         diagnostics.checks.token_validation_query = {
             status: (isExpectedError || !queryError) ? 'ok' : 'error',

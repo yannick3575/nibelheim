@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { getPrompt, updatePrompt, deletePrompt } from '@/lib/prompt-library';
 import { createClient } from '@/lib/supabase/server';
 import { logger } from '@/lib/logger';
+import { withUserRateLimit } from '@/lib/rate-limit';
 
 interface RouteParams {
   params: Promise<{
@@ -62,8 +63,18 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // Rate limiting
+    const rateLimitResponse = await withUserRateLimit(user.id, 'default');
+    if (rateLimitResponse) return rateLimitResponse;
+
     const { id } = await params;
-    const body = await request.json();
+
+    let body;
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+    }
 
     const validation = updatePromptSchema.safeParse(body);
 
@@ -101,6 +112,10 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    // Rate limiting
+    const rateLimitResponse = await withUserRateLimit(user.id, 'default');
+    if (rateLimitResponse) return rateLimitResponse;
 
     const { id } = await params;
     const success = await deletePrompt(id);
