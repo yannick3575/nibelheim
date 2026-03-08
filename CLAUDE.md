@@ -53,8 +53,6 @@ To create a new module, copy `src/modules/_template/` and register it in `regist
 Core tables: `profiles`, `user_modules`, `module_data`
 Tech Watch tables: `tech_watch_articles`, `tech_watch_digests`, `tech_watch_sources`
 Prompt Library tables: `prompts`, `prompt_executions`, `prompt_discovery_sources`
-Stochastic Lab tables: `stochastic_conversations`, `stochastic_messages`
-AI Inbox tables: `ai_inbox_items`, `ai_inbox_settings`
 API Management: `api_tokens` (for external service keys)
 Uses pgvector for embeddings and RLS for data isolation.
 
@@ -121,76 +119,6 @@ Uses pgvector for embeddings and RLS for data isolation.
 - `prompt_executions`: id, prompt_id, user_id, variables, executed_at (for usage tracking)
 - `prompt_discovery_sources`: id, user_id, name, url, is_active, last_scraped_at
 
-### Stochastic Lab
-**Path**: `src/modules/stochastic-lab/`
-**Description**: AI-powered probabilistic simulations and statistical modeling workspace
-
-**Features**:
-- Interactive chat interface with Gemini AI for statistical guidance
-- Monte Carlo simulations
-- Markov chains modeling
-- Random walk simulations
-- Conversation history persistence
-- Real-time streaming responses from Gemini
-
-**Architecture**:
-- **Frontend**: Chat interface with conversation management
-- **Backend**: Gemini API integration for AI-guided simulations
-- **API Routes**:
-  - `GET /api/stochastic-lab/conversations` - List user's conversations
-  - `POST /api/stochastic-lab/conversations` - Create new conversation
-  - `GET /api/stochastic-lab/conversations/[id]` - Get conversation with messages
-  - `POST /api/stochastic-lab/conversations/[id]` - Add message to conversation
-  - `DELETE /api/stochastic-lab/conversations/[id]` - Delete conversation
-
-**Database Schema**:
-- `stochastic_conversations`: id, user_id, title, created_at, updated_at
-- `stochastic_messages`: id, conversation_id, role, content, created_at
-
-### AI Inbox
-**Path**: `src/modules/ai-inbox/`
-**Description**: Intelligent content curation system with automated AI analysis
-
-**Features**:
-- Add content from YouTube, Substack, articles, or manual entry
-- Automatic content extraction (YouTube transcripts via youtube-transcript, web scraping via Jina Reader)
-- AI-powered analysis using Gemini with custom user profile
-- Category organization (Tools, Prompts, Tutorials, News, Inspiration)
-- Read/unread tracking and favorites
-- Actionability and complexity scoring
-- AI-generated project ideas based on content
-- Real-time updates via Supabase subscriptions
-- Configurable user profile for personalized relevance scoring
-
-**Architecture**:
-- **Frontend**: Item cards with AI analysis display, filtering, and status management
-- **Backend**: Async content extraction and Gemini analysis pipeline
-- **Content Extraction**:
-  - YouTube: Transcript via `youtube-transcript` library
-  - Web content: Jina Reader API scraping (fallback)
-- **API Routes**:
-  - `GET /api/ai-inbox/items` - List items (supports filters: `?status=`, `?category=`, `?source_type=`, `?favorite=true`)
-  - `POST /api/ai-inbox/items` - Create item (triggers async analysis)
-  - `PATCH /api/ai-inbox/items/[id]` - Update item (status, favorite, category)
-  - `DELETE /api/ai-inbox/items/[id]` - Delete item
-  - `POST /api/ai-inbox/analyze/[id]` - Manually trigger AI re-analysis
-  - `POST /api/ai-inbox/parse-url` - Extract metadata from URL
-  - `GET /api/ai-inbox/settings` - Get user settings/profile
-  - `PATCH /api/ai-inbox/settings` - Update user settings/profile
-
-**Database Schema**:
-- `ai_inbox_items`: id, user_id, title, url, source_type, category, raw_content, ai_analysis (JSONB), status, is_favorite, tags, created_at, updated_at
-- `ai_inbox_settings`: user_id, profile (JSONB with skills, interests, learning_goals), created_at, updated_at
-
-**AI Analysis Flow**:
-1. Item created via POST request
-2. Immediately returns item to user (non-blocking)
-3. Background async job:
-   - Extracts content (YouTube transcript or Jina scraping)
-   - Sends to Gemini with user profile context
-   - Saves both content and analysis in single atomic DB update
-4. Frontend receives real-time update via Supabase subscription
-
 ## Additional Features
 
 ### API Token Management
@@ -198,7 +126,7 @@ Uses pgvector for embeddings and RLS for data isolation.
 **Description**: Secure storage and management of external service API keys
 
 **Features**:
-- Encrypted storage of API tokens (Gemini, Jina, etc.)
+- Encrypted storage of API tokens (Gemini, etc.)
 - Per-user token management
 - Token validation and testing
 
@@ -234,8 +162,6 @@ When implementing or updating LLM integrations:
 - Check official documentation for current model availability and pricing
 - **Current AI Stack**:
   - Primary LLM: Google Gemini (via `@google/generative-ai`)
-  - Content extraction: Jina Reader API for web scraping
-  - YouTube: `youtube-transcript` library
   - Embeddings: Supabase pgvector (for Tech Watch semantic search)
 
 ## Conventions
@@ -282,7 +208,6 @@ The app uses a Vision UI-inspired design with neon glassmorphism effects:
 
 ### Performance Optimization
 - **Real-time subscriptions**: Use Supabase subscriptions sparingly (can impact performance)
-- **Atomic updates**: AI Inbox uses single DB update to prevent multiple subscription triggers
 - **Async operations**: Use `request.waitUntil()` for background tasks in serverless environments
 - **Caching**: API routes implement cache headers where appropriate
 
