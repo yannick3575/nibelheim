@@ -1,6 +1,7 @@
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import { AppSidebar, AppHeader } from '@/components/layout';
 import { AuroraBackground } from '@/components/ui/aurora-background';
+import { CommandPalette } from '@/components/search/command-palette';
 
 export default function DashboardLayout({
     children,
@@ -18,6 +19,7 @@ export default function DashboardLayout({
                     </main>
                 </SidebarInset>
             </SidebarProvider>
+            <CommandPalette />
         </AuroraBackground>
     );
 }

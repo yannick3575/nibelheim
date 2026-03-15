@@ -1,10 +1,11 @@
 import { lazy } from 'react';
-import { Rss, FlaskConical, BookText } from 'lucide-react';
+import { Rss, FlaskConical, BookText, Brain } from 'lucide-react';
 import { ModuleConfig, ModuleRegistry } from '@/types/modules';
 
 // Lazy load module components
 const TechWatchModule = lazy(() => import('./tech-watch'));
 const PromptLibraryModule = lazy(() => import('./prompt-library'));
+const KnowledgeBaseModule = lazy(() => import('./knowledge-base'));
 const TemplateModule = lazy(() => import('./_template'));
 
 // Module definitions
@@ -30,6 +31,17 @@ const modules: ModuleConfig[] = [
         component: PromptLibraryModule,
         category: 'ai',
         tags: ['prompts', 'templates', 'productivity'],
+    },
+    {
+        id: 'knowledge-base',
+        name: 'Knowledge Base',
+        description: 'Second cerveau — notes, bookmarks et snippets avec recherche sémantique',
+        icon: Brain,
+        route: '/knowledge-base',
+        enabled: true,
+        component: KnowledgeBaseModule,
+        category: 'ai',
+        tags: ['knowledge', 'notes', 'bookmarks', 'semantic-search'],
     },
     // Template module - disabled by default, for development reference
     {

@@ -24,6 +24,9 @@ npm run test:coverage # Run tests with coverage report
 # Python Tech Watch Bot
 pip install -r scripts/tech-watch-bot/requirements.txt
 python scripts/tech-watch-bot/main.py
+
+# Embedding Backfill (one-time, after migration 013)
+GEMINI_API_KEY=xxx NEXT_PUBLIC_SUPABASE_URL=xxx SUPABASE_SERVICE_ROLE_KEY=xxx USER_ID=xxx npx tsx scripts/embed-backfill/run.ts
 ```
 
 ## Architecture
@@ -53,8 +56,10 @@ To create a new module, copy `src/modules/_template/` and register it in `regist
 Core tables: `profiles`, `user_modules`, `module_data`
 Tech Watch tables: `tech_watch_articles`, `tech_watch_digests`, `tech_watch_sources`
 Prompt Library tables: `prompts`, `prompt_executions`, `prompt_discovery_sources`
+Knowledge Base tables: `knowledge_base_entries` (with `embedding vector(768)` and `search_vector tsvector`)
 API Management: `api_tokens` (for external service keys)
 Uses pgvector for embeddings and RLS for data isolation.
+Hybrid search RPC: `search_kb_and_tech_watch` (0.7 semantic + 0.3 full-text weighted fusion)
 
 ## Active Modules
 
@@ -119,6 +124,52 @@ Uses pgvector for embeddings and RLS for data isolation.
 - `prompt_executions`: id, prompt_id, user_id, variables, executed_at (for usage tracking)
 - `prompt_discovery_sources`: id, user_id, name, url, is_active, last_scraped_at
 
+### Knowledge Base (Second Brain)
+**Path**: `src/modules/knowledge-base/`
+**Description**: Personal knowledge repository with semantic search for notes, bookmarks, and code snippets
+
+**Features**:
+- Create, edit, delete entries of three types: Note, Bookmark, Snippet
+- Category organization (General, Engineering, Research, Reference, Personal)
+- Favorites system
+- Search (full-text via tsvector) and filter by type/category
+- Copy to clipboard
+- Automatic embedding generation on save (Gemini gemini-embedding-001, 768 dims)
+- Cross-module semantic search via Cmd+K command palette
+
+**Architecture**:
+- **Frontend**: React component with card grid view
+- **Shared Services**:
+  - `src/lib/embeddings.ts` - Shared embedding service (server-only, Gemini gemini-embedding-001)
+  - `src/lib/search.ts` - Hybrid search (semantic + full-text) across KB and Tech Watch
+- **Components**:
+  - `EntryCard` - Card with optimistic favorite toggle (`useOptimistic` + `useTransition`)
+  - `CreateEntryDialog` / `EditEntryDialog` - Type-specific form dialogs
+  - `FilterBar` - Type, category, search, favorites filters
+  - `EntryStats` - Stats dashboard (notes/bookmarks/snippets/favorites counts)
+- **Search Components** (`src/components/search/`):
+  - `CommandPalette` - Cmd+K dialog with debounced search, keyboard navigation
+  - `useCommandPalette` - Hook for open/close state and keyboard shortcut
+  - `SearchResultItem` - Result row with type icon and source badge
+- **API Routes**:
+  - `GET /api/knowledge-base` - List entries (supports `?type=`, `?category=`, `?favorites=true`, `?search=`, `?tags=`)
+  - `POST /api/knowledge-base` - Create entry (embedding generated in background)
+  - `GET /api/knowledge-base/[id]` - Get single entry
+  - `PATCH /api/knowledge-base/[id]` - Update entry (re-embeds if title/content changed)
+  - `DELETE /api/knowledge-base/[id]` - Delete entry
+  - `POST /api/knowledge-base/[id]/embed` - Regenerate embedding (uses 'ai' rate limit)
+  - `GET /api/search` - Hybrid search across KB + Tech Watch (uses 'ai' rate limit)
+
+**Database Schema**:
+- `knowledge_base_entries`: id, user_id, type, title, content, source_url, source_title, code_language, category, tags, is_favorite, embedding (vector(768)), search_vector (tsvector, auto-generated), created_at, updated_at
+
+**Embedding Architecture**:
+- Model: Gemini `gemini-embedding-001` (768 dimensions by default)
+- Index: HNSW (works on any dataset size, unlike IVFFlat)
+- Task types: `RETRIEVAL_DOCUMENT` for storage, `RETRIEVAL_QUERY` for search
+- Background generation: entries are saved immediately, embedding via fire-and-forget IIFE
+- Backfill script: `npx tsx scripts/embed-backfill/run.ts` (requires GEMINI_API_KEY, SUPABASE vars, USER_ID)
+
 ## Additional Features
 
 ### API Token Management
@@ -162,7 +213,9 @@ When implementing or updating LLM integrations:
 - Check official documentation for current model availability and pricing
 - **Current AI Stack**:
   - Primary LLM: Google Gemini (via `@google/generative-ai`)
-  - Embeddings: Supabase pgvector (for Tech Watch semantic search)
+  - Embeddings: Gemini `gemini-embedding-001` → pgvector `vector(768)` with HNSW indexes
+  - Shared embedding service: `src/lib/embeddings.ts` (server-only)
+  - SDK limitation: `@google/generative-ai` SDK does NOT support `outputDimensionality` — we call the REST API directly via `fetch()` in `src/lib/embeddings.ts`
 
 ## Conventions
 
@@ -252,6 +305,9 @@ If Redis is not configured, rate limiting fails open (allows requests).
 - **Middleware**: Changes to `middleware.ts` require server restart in development
 - **Real-time**: Ensure tables have `REPLICA IDENTITY FULL` for update subscriptions
 - **Environment Variables**: Prefix with `NEXT_PUBLIC_` for client-side access
+- **React 19 `set-state-in-effect`**: Prefer derived state (`const x = condition ? stateA : stateB`) and event handlers over `setState` inside `useEffect`. See `command-palette.tsx` for the pattern.
+- **Tailwind v4 class purging**: Never construct class names dynamically (e.g., `` `text-${color}` ``). Always use complete literal strings so the scanner detects them.
+- **Gemini Embedding SDK**: `@google/generative-ai` v0.24.1 doesn't expose `outputDimensionality` — pick models whose default output matches your `vector(N)` column.
 
 ### Key Libraries & Dependencies
 - **UI**: Radix UI primitives via shadcn/ui, Lucide icons
