@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 import { Search, Loader2, Brain, Rss } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useCommandPalette } from './use-command-palette';
@@ -119,6 +120,9 @@ export function CommandPalette() {
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-[600px] p-0 gap-0 overflow-hidden" showCloseButton={false}>
+        <VisuallyHidden>
+          <DialogTitle>Recherche</DialogTitle>
+        </VisuallyHidden>
         {/* Search input */}
         <div className="flex items-center gap-3 px-4 py-3 border-b">
           {loading ? (
