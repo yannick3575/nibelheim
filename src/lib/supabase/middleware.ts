@@ -6,6 +6,11 @@ export async function updateSession(request: NextRequest) {
         request,
     });
 
+    // Auth bypass: skip all session checks and redirects
+    if (process.env.NEXT_PUBLIC_AUTH_BYPASS === 'true') {
+        return supabaseResponse;
+    }
+
     const supabase = createServerClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,

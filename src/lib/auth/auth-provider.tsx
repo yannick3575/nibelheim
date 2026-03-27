@@ -21,9 +21,17 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const BYPASS_USER: User = {
+    id: '3bc03a0f-2ed9-493f-ab6f-4d7fc9409de6',
+    email: 'bypass@nibelheim.local',
+    displayName: 'Yannick',
+};
+
+const isAuthBypassed = process.env.NEXT_PUBLIC_AUTH_BYPASS === 'true';
+
 export function AuthProvider({ children }: { children: ReactNode }) {
-    const [user, setUser] = useState<User | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
+    const [user, setUser] = useState<User | null>(isAuthBypassed ? BYPASS_USER : null);
+    const [isLoading, setIsLoading] = useState(!isAuthBypassed);
     const [supabase] = useState(() => createClient());
 
     const mapSupabaseUser = (u: SupabaseUser | null): User | null => {
@@ -37,6 +45,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
 
     useEffect(() => {
+        if (isAuthBypassed) return;
+
         const checkSession = async () => {
             try {
                 const { data: { session } } = await supabase.auth.getSession();
